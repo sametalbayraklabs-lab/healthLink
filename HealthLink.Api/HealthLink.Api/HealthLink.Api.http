@@ -1,0 +1,29 @@
+﻿@HealthLink.Api_HostAddress = http://localhost:5107
+
+### Swagger (tarayıcıdan açılır)
+# https://localhost:5107/swagger
+
+### Health check (opsiyonel – ileride eklenebilir)
+# GET {{HealthLink.Api_HostAddress}}/health
+
+### Auth – Register
+POST {{HealthLink.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@healthlink.com",
+  "password": "Test123!",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+###
+
+### Auth – Login
+POST {{HealthLink.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@healthlink.com",
+  "password": "Test123!"
+}
