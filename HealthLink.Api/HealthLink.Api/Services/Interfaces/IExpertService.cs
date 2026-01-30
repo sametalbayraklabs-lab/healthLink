@@ -28,4 +28,7 @@ public interface IExpertService
     // Existing methods
     Task<IReadOnlyList<ExpertListItemResponse>> GetActiveExpertsAsync();
     Task<ExpertDetailResponse> GetByIdAsync(long expertId);
+    
+    // Appointment booking methods
+    Task<AvailabilityDto> GetAvailabilityAsync(long expertId, DateOnly date);
 }

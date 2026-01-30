@@ -76,12 +76,23 @@ export default function AppointmentsPage() {
 
     return (
         <Container maxWidth="lg">
-            <Typography variant="h4" gutterBottom fontWeight={600}>
-                Randevularım
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-                Geçmiş ve gelecek randevularınız
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Box>
+                    <Typography variant="h4" gutterBottom fontWeight={600}>
+                        Randevularım
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Geçmiş ve gelecek randevularınız
+                    </Typography>
+                </Box>
+                <Button
+                    variant="contained"
+                    size="large"
+                    href="/client/appointments/new"
+                >
+                    Yeni Randevu Oluştur
+                </Button>
+            </Box>
 
             <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {appointments.map((appointment) => (

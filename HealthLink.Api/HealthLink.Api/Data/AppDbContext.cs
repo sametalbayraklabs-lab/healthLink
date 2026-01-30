@@ -18,6 +18,7 @@ namespace HealthLink.Api.Data
         public DbSet<Admin> Admins => Set<Admin>();
         public DbSet<Specialization> Specializations => Set<Specialization>();
         public DbSet<ExpertSpecialization> ExpertSpecializations => Set<ExpertSpecialization>();
+        public DbSet<ExpertCertificate> ExpertCertificates => Set<ExpertCertificate>();
         public DbSet<ServicePackage> ServicePackages => Set<ServicePackage>();
         public DbSet<ClientPackage> ClientPackages => Set<ClientPackage>();
         public DbSet<Payment> Payments => Set<Payment>();

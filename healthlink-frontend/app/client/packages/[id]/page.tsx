@@ -61,7 +61,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
         setPurchasing(true);
         try {
             // Create a client package purchase
-            await api.post('/api/client-packages', {
+            await api.post('/api/client-packages/purchase', {
                 servicePackageId: packageData?.id,
             });
 

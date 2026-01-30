@@ -44,6 +44,21 @@ public class PaymentService : IPaymentService
             throw new BusinessException("PAYMENT_ALREADY_COMPLETED", "Bu paket iÃ§in Ã¶deme zaten tamamlanmÄ±ÅŸ.", 400);
         }
 
+        // ============================================================================
+        // TODO: REMOVE BEFORE PRODUCTION - Payment Gateway Bypass
+        // ============================================================================
+        // UYARI: Ödeme gateway entegrasyonu henüz yapılmadığı için paket satın alma
+        // işlemi direkt tamamlanıyor. Production'a çıkmadan önce mutlaka düzeltilmeli!
+        // 
+        // Yapılması gerekenler:
+        // 1. Ödeme gateway entegrasyonu (Iyzico, Stripe, vb.)
+        // 2. Payment status'u Pending olarak başlat
+        // 3. Gateway'e yönlendir ve callback bekle
+        // 4. Callback'te payment'ı Success yap ve paketi aktifleştir
+        //
+        // Detaylar için bkz: /Docs/DocumentsofSolution/TechnicalDebt.md #3
+        // ============================================================================
+
         var payment = new Payment
         {
             ClientId = client.Id,
@@ -51,21 +66,25 @@ public class PaymentService : IPaymentService
             Amount = clientPackage.ServicePackage.Price,
             Currency = clientPackage.ServicePackage.Currency,
             PaymentMethod = request.PaymentMethod,
-            Status = PaymentStatus.Pending,
+            Status = PaymentStatus.Success, // TODO: Should be Pending, changed to Success for bypass
             Gateway = PaymentGateway.Iyzico,
+            ConfirmedAt = DateTime.UtcNow, // TODO: Should be set in callback, not here
             CreatedAt = DateTime.UtcNow
         };
 
         _db.Payments.Add(payment);
+
+        // TODO: This should happen in callback after payment confirmation
+        clientPackage.Status = ClientPackageStatus.Active;
+        clientPackage.UpdatedAt = DateTime.UtcNow;
+
         await _db.SaveChangesAsync();
 
-        // Mock payment URL
-        var paymentUrl = $"https://payment-gateway.com/pay/{payment.Id}";
-
+        // TODO: Return actual payment URL from gateway instead of mock success
         return new InitiatePaymentResponse
         {
             PaymentId = payment.Id,
-            PaymentUrl = paymentUrl,
+            PaymentUrl = null, // No redirect needed, payment is already complete
             Token = Guid.NewGuid().ToString()
         };
     }

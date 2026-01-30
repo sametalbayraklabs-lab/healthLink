@@ -35,7 +35,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     const menuItems = [
         { label: 'Dashboard', path: '/client/dashboard', icon: <DashboardIcon /> },
-        { label: 'Profilim', path: '/client/profile', icon: <PersonIcon /> },
         { label: 'Paketler', path: '/client/packages', icon: <LocalHospitalIcon /> },
         { label: 'Randevularım', path: '/client/appointments', icon: <CalendarMonthIcon /> },
         { label: 'Mesajlar', path: '/client/messages', icon: <MessageIcon /> },

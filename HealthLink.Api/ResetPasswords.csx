@@ -7,33 +7,33 @@ using HealthLink.Api.Data;
 using HealthLink.Api.Entities;
 
 var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-optionsBuilder.UseNpgsql("Host=localhost;Database=healthlinkdb;Username=postgres;Password=postgres");
+optionsBuilder.UseNpgsql("Host=localhost;Database=healthlink;Username=postgres;Password=300988temAS");
 
 using var context = new AppDbContext(optionsBuilder.Options);
 
 // Hash password helper
 void HashPassword(string password, out string hash, out string salt)
 {
-    using var hmac = new HMACSHA512();
+    using var hmac = new HMACSHA256();
     salt = Convert.ToBase64String(hmac.Key);
     hash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(password)));
 }
 
-// Update all expert passwords to Test123!
+// Update all expert passwords to 123
 var experts = context.Users.Where(u => context.Experts.Any(e => e.UserId == u.Id)).ToList();
 foreach (var user in experts)
 {
-    HashPassword("Test123!", out string hash, out string salt);
+    HashPassword("123", out string hash, out string salt);
     user.PasswordHash = hash;
     user.PasswordSalt = salt;
     Console.WriteLine($"Updated expert: {user.Email}");
 }
 
-// Create or update admin with Admin123!
+// Create or update admin with 123
 var adminUser = context.Users.FirstOrDefault(u => u.Email == "admin@healthlink.com");
 if (adminUser == null)
 {
-    HashPassword("Admin123!", out string hash, out string salt);
+    HashPassword("123", out string hash, out string salt);
     adminUser = new User
     {
         Email = "admin@healthlink.com",
@@ -58,7 +58,7 @@ if (adminUser == null)
 }
 else
 {
-    HashPassword("Admin123!", out string hash, out string salt);
+    HashPassword("123", out string hash, out string salt);
     adminUser.PasswordHash = hash;
     adminUser.PasswordSalt = salt;
     Console.WriteLine("Updated admin: admin@healthlink.com");

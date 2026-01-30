@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 using HealthLink.Api.Data;
 using HealthLink.Api.Security;
@@ -102,25 +103,50 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IExpertAvailabilityService, ExpertAvailabilityService>();
 
 // JWT Authentication - Temporarily disabled
-// TODO: Review and properly implement JWT authentication architecture
-/*
+// JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        var jwtKey = builder.Configuration["Jwt:Key"];
+        if (string.IsNullOrEmpty(jwtKey))
+        {
+            throw new InvalidOperationException("JWT Key is not configured in appsettings.json");
+        }
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            // TODO: TEMPORARY - All validation disabled for debugging
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = false,
             ValidateIssuerSigningKey = false,
-            RequireSignedTokens = false,
             
             RoleClaimType = "role"
+        };
+
+        // DEBUG: Log JWT events
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var token = context.Request.Headers["Authorization"].FirstOrDefault();
+                Console.WriteLine($"[JWT] Authorization header: {token}");
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine($"[JWT] Authentication failed: {context.Exception.Message}");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine($"[JWT] Token validated successfully. Claims count: {context.Principal?.Claims.Count()}");
+                return Task.CompletedTask;
+            }
         };
     });
 
 builder.Services.AddAuthorization();
-*/
 
 var app = builder.Build();
 
@@ -139,10 +165,11 @@ app.UseHttpsRedirection();
 // CORS
 app.UseCors();
 
-// Authentication & Authorization - Disabled for now
-// TODO: Properly implement JWT authentication
-// app.UseAuthentication();
-// app.UseAuthorization();
+// Custom JWT Middleware (replaces broken ASP.NET Core JWT Bearer)
+app.UseMiddleware<HealthLink.Api.Middleware.SimpleJwtMiddleware>();
+
+// Authorization (authentication is handled by SimpleJwtMiddleware above)
+app.UseAuthorization();
 
 app.MapControllers();
 

@@ -372,5 +372,72 @@ namespace HealthLink.Api.Services
 
             return await GetExpertProfileAsync(expert.UserId);
         }
+
+        public async Task<AvailabilityDto> GetAvailabilityAsync(long expertId, DateOnly date)
+        {
+            // Get expert's schedule template for the day
+            var dayOfWeek = (int)date.DayOfWeek;
+            var template = await _db.ExpertScheduleTemplates
+                .FirstOrDefaultAsync(x => x.ExpertId == expertId && x.DayOfWeek == dayOfWeek);
+
+            if (template == null || !template.IsOpen)
+            {
+                return new AvailabilityDto
+                {
+                    ExpertId = expertId,
+                    Date = date,
+                    AvailableSlots = new List<TimeSlotDto>()
+                };
+            }
+
+            // Get existing appointments for the date
+            var startOfDay = date.ToDateTime(TimeOnly.MinValue);
+            var endOfDay = date.ToDateTime(TimeOnly.MaxValue);
+            
+            var existingAppointments = await _db.Appointments
+                .Where(x => x.ExpertId == expertId 
+                    && x.StartDateTime >= startOfDay 
+                    && x.StartDateTime < endOfDay
+                    && x.Status == Entities.Enums.AppointmentStatus.Scheduled)
+                .Select(x => new { x.StartDateTime, x.EndDateTime })
+                .ToListAsync();
+
+            // Generate time slots (45 minutes each, standard session duration)
+            var slots = new List<TimeSlotDto>();
+            var currentTime = template.WorkStartTime!.Value;
+            var endTime = template.WorkEndTime!.Value;
+
+            while (currentTime.AddMinutes(45) <= endTime)
+            {
+                var slotStart = currentTime;
+                var slotEnd = currentTime.AddMinutes(45);
+                
+                var slotStartDateTime = date.ToDateTime(slotStart);
+                var slotEndDateTime = date.ToDateTime(slotEnd);
+
+                // Check if slot overlaps with existing appointments
+                var isAvailable = !existingAppointments.Any(apt =>
+                    slotStartDateTime < apt.EndDateTime && slotEndDateTime > apt.StartDateTime);
+
+                if (isAvailable)
+                {
+                    slots.Add(new TimeSlotDto
+                    {
+                        StartTime = slotStart,
+                        EndTime = slotEnd,
+                        DurationMinutes = 45
+                    });
+                }
+
+                currentTime = currentTime.AddMinutes(45);
+            }
+
+            return new AvailabilityDto
+            {
+                ExpertId = expertId,
+                Date = date,
+                AvailableSlots = slots
+            };
+        }
     }
 }

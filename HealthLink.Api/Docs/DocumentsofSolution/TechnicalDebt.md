@@ -72,9 +72,43 @@ options.TokenValidationParameters = new TokenValidationParameters
 
 ---
 
+### 3. Payment Gateway Bypass (Geçici)
+
+**Durum**: Ödeme altyapısı henüz entegre edilmediği için paket satın alma işlemi direkt tamamlanıyor.
+
+**Mevcut Durum**:
+```csharp
+// PaymentService.cs - InitiatePaymentAsync
+// TODO: REMOVE BEFORE PRODUCTION - Payment gateway bypass
+// Ödeme gateway'i olmadan direkt paket aktifleştiriliyor
+payment.Status = PaymentStatus.Success;
+payment.ConfirmedAt = DateTime.UtcNow;
+clientPackage.Status = ClientPackageStatus.Active;
+```
+
+**Riskler**:
+- ⚠️ Kullanıcılar ödeme yapmadan paket satın alabiliyor
+- ⚠️ Gelir kaybı riski
+- ⚠️ Production'a bu şekilde çıkılamaz
+
+**Yapılması Gerekenler**:
+1. Ödeme gateway entegrasyonu (Iyzico, Stripe, vb.)
+2. Payment flow'u düzelt:
+   - Pending payment oluştur
+   - Gateway'e yönlendir
+   - Callback ile payment'ı tamamla
+3. Webhook endpoint'i ekle
+4. Payment retry mekanizması
+5. Refund işlemleri
+
+**Tahmini Süre**: 16-24 saat  
+**Öncelik**: P0 (Production öncesi mutlaka)
+
+---
+
 ## 🟡 Yüksek Öncelikli
 
-### 3. CORS Politikası
+### 4. CORS Politikası
 
 **Durum**: Tüm origin'lere izin veriliyor.
 

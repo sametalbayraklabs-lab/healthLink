@@ -58,3 +58,23 @@ export interface Specialization {
 export interface SetSpecializationsRequest {
     specializationIds: number[];
 }
+
+// Appointment booking types
+export interface TimeSlot {
+    startTime: string;
+    endTime: string;
+    durationMinutes: number;
+}
+
+export interface Availability {
+    expertId: number;
+    date: string;
+    availableSlots: TimeSlot[];
+}
+
+export interface Certificate {
+    id: number;
+    name: string;
+    issuer?: string;
+    year?: number;
+}

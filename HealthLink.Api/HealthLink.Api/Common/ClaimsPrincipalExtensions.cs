@@ -6,11 +6,21 @@ public static class ClaimsPrincipalExtensions
 {
     public static long GetUserId(this ClaimsPrincipal principal)
     {
+        // DEBUG: Log all claims to diagnose token issues
+        Console.WriteLine("=== JWT TOKEN CLAIMS ===");
+        Console.WriteLine($"Total claims: {principal.Claims.Count()}");
+        foreach (var claim in principal.Claims)
+        {
+            Console.WriteLine($"  {claim.Type} = {claim.Value}");
+        }
+        Console.WriteLine("========================");
+
         var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier) 
                           ?? principal.FindFirst("sub");
         
         if (userIdClaim == null || !long.TryParse(userIdClaim.Value, out var userId))
         {
+            Console.WriteLine($"ERROR: User ID claim not found. NameIdentifier: {principal.FindFirst(ClaimTypes.NameIdentifier)?.Value}, sub: {principal.FindFirst("sub")?.Value}");
             throw new UnauthorizedAccessException("User ID not found in token");
         }
 

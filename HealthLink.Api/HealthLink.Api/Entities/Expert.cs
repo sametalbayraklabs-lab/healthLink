@@ -12,6 +12,8 @@ namespace HealthLink.Api.Entities
 
         public string? DisplayName { get; set; }        // Max 150
         public string? Bio { get; set; }
+        public string? ProfilePhotoUrl { get; set; }    // Profile photo path
+        public string? IntroVideoUrl { get; set; }      // Introduction video path
         public string? City { get; set; }               // Max 100
 
         public WorkType? WorkType { get; set; }         // Nullable enum (stored as int)
@@ -27,5 +29,6 @@ namespace HealthLink.Api.Entities
 
         public User User { get; set; } = null!;
         public ICollection<ExpertSpecialization> ExpertSpecializations { get; set; } = new List<ExpertSpecialization>();
+        public ICollection<ExpertCertificate> ExpertCertificates { get; set; } = new List<ExpertCertificate>();
     }
 }

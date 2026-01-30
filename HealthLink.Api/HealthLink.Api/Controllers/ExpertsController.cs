@@ -92,5 +92,22 @@ public class ExpertsController : ControllerBase
         var result = await _expertService.RejectExpertAsync(id, request.AdminNote);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Get expert's available time slots for appointment booking
+    /// </summary>
+    [HttpGet("{id}/availability")]
+    public async Task<ActionResult<AvailabilityDto>> GetAvailability(
+        long id,
+        [FromQuery] string date)
+    {
+        if (!DateOnly.TryParse(date, out var parsedDate))
+        {
+            return BadRequest("Invalid date format. Use YYYY-MM-DD");
+        }
+
+        var result = await _expertService.GetAvailabilityAsync(id, parsedDate);
+        return Ok(result);
+    }
 }
 
