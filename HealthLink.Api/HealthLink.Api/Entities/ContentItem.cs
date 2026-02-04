@@ -36,5 +36,10 @@ namespace HealthLink.Api.Entities
         public DateTime CreatedAt { get; set; }
 
         public DateTime? UpdatedAt { get; set; }
+
+        // Engagement tracking (admin-only visibility)
+        public int ViewCount { get; set; } = 0;
+        public int LikeCount { get; set; } = 0;
+        public int DislikeCount { get; set; } = 0;
     }
 }

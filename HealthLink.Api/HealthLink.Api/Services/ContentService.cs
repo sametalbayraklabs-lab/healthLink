@@ -90,10 +90,14 @@ public class ContentService : IContentService
             Id = item.Id,
             Type = item.Type.ToApiString(),
             Title = item.Title,
+            SubTitle = item.SubTitle,
             Slug = item.Slug,
-            Content = item.BodyHtml,
-            Summary = item.SubTitle,
-            ThumbnailUrl = item.CoverImageUrl,
+            Category = item.Category,
+            CoverImageUrl = item.CoverImageUrl,
+            BodyHtml = item.BodyHtml,
+            Content = item.BodyHtml, // Legacy field
+            Summary = item.SubTitle, // Legacy field
+            ThumbnailUrl = item.CoverImageUrl, // Legacy field
             Status = item.Status.ToApiString(),
             CreatedAt = item.CreatedAt,
             PublishedAt = item.PublishedAt

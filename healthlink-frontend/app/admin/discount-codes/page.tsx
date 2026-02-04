@@ -1,18 +1,20 @@
 'use client';
 
-import { Container, Typography, Box } from '@mui/material';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { CircularProgress, Box } from '@mui/material';
 
 export default function AdminDiscountCodesPage() {
+    const router = useRouter();
+
+    useEffect(() => {
+        // Redirect to parameters page with discount codes tab
+        router.push('/admin/parameters');
+    }, [router]);
+
     return (
-        <Container maxWidth="lg">
-            <Typography variant="h4" gutterBottom fontWeight={600}>
-                İndirim Kodu Yönetimi
-            </Typography>
-            <Box textAlign="center" py={8}>
-                <Typography variant="h6" color="text.secondary">
-                    İndirim kodu CRUD işlemleri yakında eklenecektir
-                </Typography>
-            </Box>
-        </Container>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+            <CircularProgress />
+        </Box>
     );
 }

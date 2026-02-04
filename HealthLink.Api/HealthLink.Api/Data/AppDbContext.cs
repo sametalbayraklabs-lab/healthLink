@@ -35,6 +35,7 @@ namespace HealthLink.Api.Data
         public DbSet<Message> Messages => Set<Message>();
         public DbSet<ConversationFlag> ConversationFlags => Set<ConversationFlag>();
         public DbSet<ContentItem> ContentItems => Set<ContentItem>();
+        public DbSet<ContentItemReaction> ContentItemReactions => Set<ContentItemReaction>();
         public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 

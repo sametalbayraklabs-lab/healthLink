@@ -2,10 +2,9 @@
 {
     public enum ExpertType
     {
-        All = 0,        // NULL karşılığı – tüm expert’ler
-        Dietitian = 1,
-        Physiotherapist = 2,
-        Coach = 3
-        // TDD genişledikçe eklenir
+        All = 0,           // Tüm uzman tipleri
+        Dietitian = 1,     // Diyetisyen (eski değer korundu)
+        Psychologist = 2,  // Psikolog (eski Physiotherapist yerine)
+        SportsCoach = 3    // Spor Koçu (eski Coach yerine)
     }
 }

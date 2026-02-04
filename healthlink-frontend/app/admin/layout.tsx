@@ -15,6 +15,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import ArticleIcon from '@mui/icons-material/Article';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { getInitials } from '@/lib/utils';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -39,13 +40,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Dashboard', path: '/admin/dashboard', icon: <DashboardIcon /> },
         { label: 'Danışanlar', path: '/admin/clients', icon: <PeopleIcon /> },
         { label: 'Uzmanlar', path: '/admin/experts', icon: <LocalHospitalIcon /> },
-        { label: 'Paketler', path: '/admin/packages', icon: <LocalHospitalIcon /> },
         { label: 'Ödemeler', path: '/admin/payments', icon: <PaymentIcon /> },
-        { label: 'İndirim Kodları', path: '/admin/discount-codes', icon: <DiscountIcon /> },
         { label: 'Randevular', path: '/admin/appointments', icon: <CalendarMonthIcon /> },
         { label: 'Değerlendirmeler', path: '/admin/reviews', icon: <RateReviewIcon /> },
         { label: 'Şikayetler', path: '/admin/complaints', icon: <ReportProblemIcon /> },
         { label: 'İçerik', path: '/admin/content', icon: <ArticleIcon /> },
+        { label: 'Parametreler', path: '/admin/parameters', icon: <SettingsIcon /> },
     ];
 
     return (

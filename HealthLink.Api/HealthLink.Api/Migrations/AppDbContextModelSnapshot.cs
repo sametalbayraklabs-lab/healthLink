@@ -401,6 +401,12 @@ namespace HealthLink.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("DislikeCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LikeCount")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("PublishedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -435,6 +441,9 @@ namespace HealthLink.Api.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorUserId");
@@ -443,6 +452,35 @@ namespace HealthLink.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("ContentItems", (string)null);
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.ContentItemReaction", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ContentItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsLike")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentItemId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ContentItemReactions");
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.Conversation", b =>
@@ -1007,7 +1045,7 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2026, 1, 30, 20, 42, 20, 589, DateTimeKind.Utc).AddTicks(7569),
+                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7866),
                             Currency = "TRY",
                             Description = "One online consultation session",
                             ExpertType = 0,
@@ -1019,7 +1057,7 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 2L,
-                            CreatedAt = new DateTime(2026, 1, 30, 20, 42, 20, 589, DateTimeKind.Utc).AddTicks(7571),
+                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7869),
                             Currency = "TRY",
                             Description = "Four online consultation sessions",
                             ExpertType = 0,
@@ -1043,6 +1081,9 @@ namespace HealthLink.Api.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
 
                     b.Property<int>("ExpertType")
                         .HasColumnType("integer");
@@ -1072,7 +1113,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 1L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 1, 30, 20, 42, 20, 589, DateTimeKind.Utc).AddTicks(7543),
+                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7838),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Clinical Nutrition"
@@ -1081,7 +1122,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 2L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 1, 30, 20, 42, 20, 589, DateTimeKind.Utc).AddTicks(7544),
+                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7840),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Sports Nutrition"
@@ -1090,7 +1131,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 3L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 1, 30, 20, 42, 20, 589, DateTimeKind.Utc).AddTicks(7546),
+                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7841),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Weight Management"
@@ -1131,21 +1172,21 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2026, 1, 30, 20, 42, 20, 589, DateTimeKind.Utc).AddTicks(7307),
+                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7665),
                             Key = "Platform.CommissionRate",
                             Value = "0.15"
                         },
                         new
                         {
                             Id = 2L,
-                            CreatedAt = new DateTime(2026, 1, 30, 20, 42, 20, 589, DateTimeKind.Utc).AddTicks(7312),
+                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7668),
                             Key = "Session.DefaultDurationMinutes",
                             Value = "30"
                         },
                         new
                         {
                             Id = 3L,
-                            CreatedAt = new DateTime(2026, 1, 30, 20, 42, 20, 589, DateTimeKind.Utc).AddTicks(7313),
+                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7669),
                             Key = "Session.CancelLimitHours",
                             Value = "24"
                         });
@@ -1343,6 +1384,25 @@ namespace HealthLink.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("AuthorUser");
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.ContentItemReaction", b =>
+                {
+                    b.HasOne("HealthLink.Api.Entities.ContentItem", "ContentItem")
+                        .WithMany()
+                        .HasForeignKey("ContentItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HealthLink.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ContentItem");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.Conversation", b =>

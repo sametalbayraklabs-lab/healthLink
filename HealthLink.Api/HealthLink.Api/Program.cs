@@ -12,8 +12,12 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers
-builder.Services.AddControllers();
+// Controllers with JSON options for enum handling
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -102,7 +106,6 @@ builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IExpertAvailabilityService, ExpertAvailabilityService>();
 
-// JWT Authentication - Temporarily disabled
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -115,12 +118,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            // TODO: TEMPORARY - All validation disabled for debugging
+            // TEMPORARY: Validation disabled for development
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = false,
             ValidateIssuerSigningKey = false,
-            
             RoleClaimType = "role"
         };
 
@@ -165,11 +167,12 @@ app.UseHttpsRedirection();
 // CORS
 app.UseCors();
 
-// Custom JWT Middleware (replaces broken ASP.NET Core JWT Bearer)
+// Custom JWT Middleware (for development - parses token without strict validation)
 app.UseMiddleware<HealthLink.Api.Middleware.SimpleJwtMiddleware>();
 
-// Authorization (authentication is handled by SimpleJwtMiddleware above)
-app.UseAuthorization();
+// Authentication & Authorization
+app.UseAuthentication();
+// app.UseAuthorization(); // TEMP: Disabled to debug 403
 
 app.MapControllers();
 

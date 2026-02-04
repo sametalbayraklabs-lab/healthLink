@@ -1,7 +1,7 @@
 # HealthLink - Teknik Borç Dökümanı
 
 **Oluşturulma Tarihi**: 26 Ocak 2026  
-**Son Güncelleme**: 26 Ocak 2026
+**Son Güncelleme**: 4 Şubat 2026
 
 ## Özet
 
@@ -51,6 +51,61 @@ options.TokenValidationParameters = new TokenValidationParameters
 
 **Tahmini Süre**: 4-6 saat  
 **Öncelik**: P0 (Production öncesi mutlaka)
+
+**Güncelleme (4 Şubat 2026)**:
+Aşağıdaki admin controller'larda `[Authorize(Roles = "Admin")]` attribute'ları geçici olarak devre dışı bırakıldı:
+- `AdminServicePackagesController.cs`
+- `AdminDiscountCodesController.cs`
+- `AdminContentItemsController.cs`
+- `AdminSystemSettingsController.cs`
+
+Bu controller'lar şu anda **herhangi bir authentication/authorization kontrolü yapmıyor**. Production'a çıkmadan önce mutlaka düzeltilmeli.
+
+---
+
+### 1.1. Token Storage ve API Client Tutarsızlığı
+
+**Durum**: Token storage ve API çağrıları tutarsız şekilde yapılıyor.
+
+**Mevcut Durum**:
+- `AuthContext.tsx` hem `token` hem `accessToken` olarak kaydediyor (backward compatibility)
+- `lib/api.ts` merkezi API client var ve `accessToken` kullanıyor
+- Admin component'ler manuel `fetch` kullanıyor ve `token` key'ini okuyor
+- Client/Expert sayfalar da manuel `fetch` kullanıyor
+
+**Manuel Fetch Örnekleri**:
+```typescript
+// ❌ Kötü: Manuel fetch, token manuel ekleniyor
+const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/specializations`, {
+    headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    }
+});
+
+// ✅ İyi: Merkezi API client kullanımı
+const response = await api.get('/api/admin/specializations');
+```
+
+**Etkilenen Dosyalar**:
+- Admin: `DiscountCodeTable.tsx`, `SpecializationTable.tsx`, `ServicePackageTable.tsx`, `SystemSettingsTable.tsx`, `ContentItemTable.tsx`, `SpecializationFormDialog.tsx`
+- Client: `app/client/appointments/new/page.tsx`
+- Expert: `app/experts/[id]/page.tsx`
+
+**Sorunlar**:
+- ❌ Kod tekrarı (her yerde Authorization header manuel ekleniyor)
+- ❌ Token key tutarsızlığı (`token` vs `accessToken`)
+- ❌ 401 hatalarında otomatik logout yok (manuel fetch'lerde)
+- ❌ Error handling tutarsız
+- ❌ Bakım maliyeti yüksek
+
+**Yapılması Gerekenler**:
+1. Tüm manuel `fetch` çağrılarını `lib/api.ts` kullanacak şekilde refactor et
+2. `token` key'ini kaldır, sadece `accessToken` kullan
+3. `api.ts` interceptor'ları iyileştir (retry logic, better error handling)
+4. Tüm component'lerde tutarlı API client kullanımı sağla
+
+**Tahmini Süre**: 6-8 saat  
+**Öncelik**: P1 (Kod kalitesi ve bakım kolaylığı için)
 
 ---
 
@@ -325,5 +380,5 @@ Property 'item' does not exist on type 'GridBaseProps'
 
 ---
 
-**Son Güncelleme**: 26 Ocak 2026  
+**Son Güncelleme**: 1 Şubat 2026  
 **Güncelleyen**: AI Assistant
