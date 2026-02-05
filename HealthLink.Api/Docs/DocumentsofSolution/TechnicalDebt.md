@@ -61,6 +61,32 @@ Aşağıdaki admin controller'larda `[Authorize(Roles = "Admin")]` attribute'lar
 
 Bu controller'lar şu anda **herhangi bir authentication/authorization kontrolü yapmıyor**. Production'a çıkmadan önce mutlaka düzeltilmeli.
 
+**Güncelleme (4 Şubat 2026 - Content Management)**:
+`ContentController.cs` içindeki like/dislike endpoint'lerinde authentication geçici olarak devre dışı bırakıldı:
+```csharp
+// ContentController.cs - React endpoint
+// [Authorize] // TODO: Re-enable after implementing proper authentication
+public async Task<ActionResult> React(long id, [FromBody] ContentReactionDto request)
+{
+    // Fallback to anonymous user for testing
+    if (!long.TryParse(userIdClaim, out var userId))
+    {
+        userId = 1; // Anonymous/test user
+    }
+}
+```
+
+**Riskler**:
+- ⚠️ Tüm kullanıcılar userId=1 olarak işlem yapıyor
+- ⚠️ Spam riski (aynı IP'den sınırsız like/dislike)
+- ⚠️ Kullanıcı başına reaction tracking çalışmıyor
+
+**Yapılması Gerekenler**:
+1. Authentication sistemi tamamlandıktan sonra `[Authorize]` attribute'unu yeniden aktif et
+2. Anonymous kullanıcılar için session-based veya IP-based tracking ekle
+3. Rate limiting ekle (örn: IP başına 10 reaction/dakika)
+4. GetMyReaction endpoint'ini de aktif et
+
 ---
 
 ### 1.1. Token Storage ve API Client Tutarsızlığı

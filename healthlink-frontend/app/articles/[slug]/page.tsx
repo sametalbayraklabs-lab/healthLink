@@ -18,7 +18,8 @@ interface Article {
     subTitle: string | null;
     slug: string;
     coverImageUrl: string | null;
-    bodyHtml: string;
+    bodyHtml?: string;
+    content?: string; // API returns this instead of bodyHtml
     category: string | null;
     publishedAt: string | null;
     createdAt: string;
@@ -33,7 +34,6 @@ export default function ArticleDetailPage() {
 
     useEffect(() => {
         fetchArticle();
-        recordView();
     }, [params.slug]);
 
     const fetchArticle = async () => {
@@ -44,6 +44,11 @@ export default function ArticleDetailPage() {
             const data = await response.json();
             const foundArticle = data.find((a: Article) => a.slug === params.slug);
             setArticle(foundArticle || null);
+
+            // Record view after finding article
+            if (foundArticle) {
+                recordView(foundArticle.id);
+            }
         } catch (error) {
             console.error('Error fetching article:', error);
         } finally {
@@ -51,9 +56,9 @@ export default function ArticleDetailPage() {
         }
     };
 
-    const recordView = async () => {
+    const recordView = async (id: number) => {
         try {
-            await fetch(`${API_URL}/api/content/${params.slug}/view`, { method: 'POST' });
+            await fetch(`${API_URL}/api/content/${id}/view`, { method: 'POST' });
         } catch (error) {
             console.error('Error recording view:', error);
         }
@@ -81,7 +86,8 @@ export default function ArticleDetailPage() {
         return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
     };
 
-    const estimateReadTime = (html: string) => {
+    const estimateReadTime = (html: string | null | undefined) => {
+        if (!html) return '1 dakika okuma';
         const text = html.replace(/<[^>]*>/g, '');
         const words = text.split(/\s+/).length;
         const minutes = Math.ceil(words / 200);
@@ -109,6 +115,8 @@ export default function ArticleDetailPage() {
             </Box>
         );
     }
+
+    const htmlContent = article.bodyHtml || article.content || '';
 
     return (
         <Box>
@@ -150,7 +158,7 @@ export default function ArticleDetailPage() {
                         </Typography>
                     </Box>
                     <Typography variant="body2" color="text.secondary">
-                        ⏱️ {estimateReadTime(article.bodyHtml)}
+                        ⏱️ {estimateReadTime(htmlContent)}
                     </Typography>
                 </Stack>
 
@@ -181,7 +189,7 @@ export default function ArticleDetailPage() {
 
                 {/* Content */}
                 <Paper sx={{ p: 4 }}>
-                    <div dangerouslySetInnerHTML={{ __html: article.bodyHtml }} />
+                    <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
                 </Paper>
             </Container>
         </Box>

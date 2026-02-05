@@ -19,7 +19,8 @@ interface Recipe {
     subTitle: string | null;
     slug: string;
     coverImageUrl: string | null;
-    bodyHtml: string;
+    bodyHtml?: string;
+    content?: string; // API returns this instead of bodyHtml
     category: string | null;
 }
 
@@ -32,7 +33,6 @@ export default function RecipeDetailPage() {
 
     useEffect(() => {
         fetchRecipe();
-        recordView();
     }, [params.slug]);
 
     const fetchRecipe = async () => {
@@ -43,6 +43,11 @@ export default function RecipeDetailPage() {
             const data = await response.json();
             const foundRecipe = data.find((r: Recipe) => r.slug === params.slug);
             setRecipe(foundRecipe || null);
+
+            // Record view after finding recipe
+            if (foundRecipe) {
+                recordView(foundRecipe.id);
+            }
         } catch (error) {
             console.error('Error fetching recipe:', error);
         } finally {
@@ -50,9 +55,9 @@ export default function RecipeDetailPage() {
         }
     };
 
-    const recordView = async () => {
+    const recordView = async (id: number) => {
         try {
-            await fetch(`${API_URL}/api/content/${params.slug}/view`, { method: 'POST' });
+            await fetch(`${API_URL}/api/content/${id}/view`, { method: 'POST' });
         } catch (error) {
             console.error('Error recording view:', error);
         }
@@ -98,7 +103,10 @@ export default function RecipeDetailPage() {
     }
 
     // Extract metadata from bodyHtml
-    const extractMetadata = (html: string) => {
+    const extractMetadata = (html: string | null | undefined) => {
+        if (!html) {
+            return { prepTime: null, servings: null, calories: null };
+        }
         const prepMatch = html.match(/(\d+)\s*(?:dk|dakika|min)/i);
         const servingMatch = html.match(/(\d+)\s*kişilik/i);
         const calorieMatch = html.match(/(\d+)\s*(?:kcal|kalori)/i);
@@ -109,7 +117,8 @@ export default function RecipeDetailPage() {
         };
     };
 
-    const metadata = extractMetadata(recipe.bodyHtml);
+    const htmlContent = recipe.bodyHtml || recipe.content || '';
+    const metadata = extractMetadata(htmlContent);
 
     return (
         <Box>
@@ -185,7 +194,7 @@ export default function RecipeDetailPage() {
 
                 {/* Content */}
                 <Paper sx={{ p: 3 }}>
-                    <div dangerouslySetInnerHTML={{ __html: recipe.bodyHtml }} />
+                    <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
                 </Paper>
             </Container>
         </Box>

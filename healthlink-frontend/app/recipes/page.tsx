@@ -16,7 +16,8 @@ interface Recipe {
     slug: string;
     coverImageUrl: string | null;
     category: string | null;
-    bodyHtml: string;
+    bodyHtml?: string;
+    content?: string; // API returns this instead of bodyHtml
 }
 
 export default function RecipesPage() {
@@ -42,14 +43,14 @@ export default function RecipesPage() {
         }
     };
 
-    // Extract prep time and servings from bodyHtml if available
-    const extractMetadata = (bodyHtml: string) => {
-        if (!bodyHtml) {
+    // Extract prep time and servings from bodyHtml or content if available
+    const extractMetadata = (html: string | null | undefined) => {
+        if (!html) {
             return { prepTime: null, servings: null, calories: null };
         }
-        const prepMatch = bodyHtml.match(/(\d+)\s*(?:dk|dakika|min)/i);
-        const servingMatch = bodyHtml.match(/(\d+)\s*kişilik/i);
-        const calorieMatch = bodyHtml.match(/(\d+)\s*(?:kcal|kalori)/i);
+        const prepMatch = html.match(/(\d+)\s*(?:dk|dakika|min)/i);
+        const servingMatch = html.match(/(\d+)\s*kişilik/i);
+        const calorieMatch = html.match(/(\d+)\s*(?:kcal|kalori)/i);
 
         return {
             prepTime: prepMatch ? `${prepMatch[1]} dakika` : null,
@@ -93,7 +94,7 @@ export default function RecipesPage() {
                         gap: 2
                     }}>
                         {recipes.map((recipe) => {
-                            const metadata = extractMetadata(recipe.bodyHtml);
+                            const metadata = extractMetadata(recipe.bodyHtml || recipe.content);
                             return (
                                 <Card
                                     key={recipe.id}

@@ -4,20 +4,16 @@ using HealthLink.Api.Data;
 using HealthLink.Api.Dtos.Expert;
 using HealthLink.Api.Entities;
 using HealthLink.Api.Services.Interfaces;
-
 using Microsoft.EntityFrameworkCore;
-
 namespace HealthLink.Api.Services
 {
     public class ExpertService : IExpertService
     {
         private readonly AppDbContext _db;
-
         public ExpertService(AppDbContext db)
         {
             _db = db;
         }
-
         public async Task<IReadOnlyList<ExpertListItemResponse>> GetActiveExpertsAsync()
         {
             return await _db.Experts
@@ -33,17 +29,14 @@ namespace HealthLink.Api.Services
                 })
                 .ToListAsync();
         }
-
         public async Task<ExpertDetailResponse> GetByIdAsync(long expertId)
         {
             var expert = await _db.Experts
                 .Include(x => x.ExpertSpecializations)
                     .ThenInclude(es => es.Specialization)
                 .FirstOrDefaultAsync(x => x.Id == expertId && x.IsActive);
-
             if (expert == null)
                 throw new InvalidOperationException("Expert not found");
-
             return new ExpertDetailResponse
             {
                 ExpertId = expert.Id,
@@ -54,21 +47,15 @@ namespace HealthLink.Api.Services
                     .ToList()
             };
         }
-
         // API-1 Methods
         public async Task<ExpertProfileDto> GetExpertProfileAsync(long userId)
         {
             var expert = await _db.Experts
-                .FirstOrDefaultAsync(x => x.UserId == userId);
+                .Include(e => e.User)
+                .FirstOrDefaultAsync(e => e.UserId == userId);
 
             if (expert == null)
-            {
-                throw new Common.BusinessException(
-                    ErrorCodes.EXPERT_NOT_FOUND,
-                    "Uzman bulunamadı.",
-                    404
-                );
-            }
+                throw new KeyNotFoundException("Expert not found");
 
             return new ExpertProfileDto
             {
@@ -90,22 +77,14 @@ namespace HealthLink.Api.Services
 
         public async Task<ExpertProfileDto> UpdateExpertProfileAsync(long userId, UpdateExpertRequestDto request)
         {
-            var expert = await _db.Experts
-                .FirstOrDefaultAsync(x => x.UserId == userId);
-
+            var expert = await _db.Experts.FirstOrDefaultAsync(e => e.UserId == userId);
             if (expert == null)
-            {
-                throw new Common.BusinessException(
-                    ErrorCodes.EXPERT_NOT_FOUND,
-                    "Uzman bulunamadı.",
-                    404
-                );
-            }
+                throw new KeyNotFoundException("Expert not found");
 
             expert.DisplayName = request.DisplayName;
             expert.Bio = request.Bio;
             expert.City = request.City;
-            expert.WorkType = Common.EnumExtensions.ParseWorkType(request.WorkType);
+            expert.WorkType = string.IsNullOrWhiteSpace(request.WorkType) ? null : EnumExtensions.ParseWorkType(request.WorkType);
             expert.ExperienceStartDate = request.ExperienceStartDate;
             expert.UpdatedAt = DateTime.UtcNow;
 
@@ -113,14 +92,12 @@ namespace HealthLink.Api.Services
 
             return await GetExpertProfileAsync(userId);
         }
-
         public async Task<ExpertPublicProfileDto> GetExpertByIdAsync(long expertId)
         {
             var expert = await _db.Experts
                 .Include(x => x.ExpertSpecializations)
                     .ThenInclude(es => es.Specialization)
                 .FirstOrDefaultAsync(x => x.Id == expertId);
-
             if (expert == null)
             {
                 throw new Common.BusinessException(
@@ -129,7 +106,6 @@ namespace HealthLink.Api.Services
                     404
                 );
             }
-
             return new ExpertPublicProfileDto
             {
                 Id = expert.Id,
@@ -150,7 +126,6 @@ namespace HealthLink.Api.Services
                     .ToList()
             };
         }
-
         public async Task<Common.PagedResult<ExpertListItemDto>> GetExpertsAsync(
             string? expertType,
             string? city,
@@ -163,26 +138,22 @@ namespace HealthLink.Api.Services
                 .Include(x => x.ExpertSpecializations)
                     .ThenInclude(es => es.Specialization)
                 .Where(x => x.Status == Entities.Enums.ExpertStatus.Approved && x.IsActive);
-
             // Filter by expertType
             if (!string.IsNullOrWhiteSpace(expertType))
             {
                 var parsedType = Common.EnumExtensions.ParseExpertType(expertType);
                 query = query.Where(x => x.ExpertType == parsedType);
             }
-
             // Filter by city
             if (!string.IsNullOrWhiteSpace(city))
             {
                 query = query.Where(x => x.City == city);
             }
-
             // Filter by specialization
             if (specializationId.HasValue)
             {
                 query = query.Where(x => x.ExpertSpecializations.Any(es => es.SpecializationId == specializationId.Value));
             }
-
             // Sorting
             query = sort?.ToLower() switch
             {
@@ -190,7 +161,6 @@ namespace HealthLink.Api.Services
                 "experience-desc" => query.OrderBy(x => x.ExperienceStartDate),
                 _ => query.OrderByDescending(x => x.AverageRating) // default
             };
-
             var totalCount = await query.CountAsync();
             var items = await query
                 .Skip((page - 1) * pageSize)
@@ -209,7 +179,6 @@ namespace HealthLink.Api.Services
                         .ToList()
                 })
                 .ToListAsync();
-
             return new Common.PagedResult<ExpertListItemDto>
             {
                 Items = items,
@@ -218,7 +187,6 @@ namespace HealthLink.Api.Services
                 TotalCount = totalCount
             };
         }
-
         public async Task<Common.PagedResult<ExpertListItemDto>> GetAllExpertsForAdminAsync(
             string? expertType,
             string? city,
@@ -230,23 +198,19 @@ namespace HealthLink.Api.Services
                 .Include(x => x.ExpertSpecializations)
                     .ThenInclude(es => es.Specialization)
                 .Where(x => x.IsActive);
-
             // Filter by expertType
             if (!string.IsNullOrWhiteSpace(expertType))
             {
                 var parsedType = Common.EnumExtensions.ParseExpertType(expertType);
                 query = query.Where(x => x.ExpertType == parsedType);
             }
-
             // Filter by city
             if (!string.IsNullOrWhiteSpace(city))
             {
                 query = query.Where(x => x.City == city);
             }
-
             // Order by creation date (newest first)
             query = query.OrderByDescending(x => x.CreatedAt);
-
             var totalCount = await query.CountAsync();
             var items = await query
                 .Skip((page - 1) * pageSize)
@@ -271,7 +235,6 @@ namespace HealthLink.Api.Services
                         .ToList()
                 })
                 .ToListAsync();
-
             return new Common.PagedResult<ExpertListItemDto>
             {
                 Items = items,
@@ -280,13 +243,11 @@ namespace HealthLink.Api.Services
                 TotalCount = totalCount
             };
         }
-
         public async Task SetSpecializationsAsync(long userId, List<long> specializationIds)
         {
             var expert = await _db.Experts
                 .Include(x => x.ExpertSpecializations)
                 .FirstOrDefaultAsync(x => x.UserId == userId);
-
             if (expert == null)
             {
                 throw new Common.BusinessException(
@@ -295,13 +256,11 @@ namespace HealthLink.Api.Services
                     404
                 );
             }
-
             // Verify all specialization IDs exist
             var existingSpecializations = await _db.Specializations
                 .Where(s => specializationIds.Contains(s.Id))
                 .Select(s => s.Id)
                 .ToListAsync();
-
             if (existingSpecializations.Count != specializationIds.Count)
             {
                 throw new Common.BusinessException(
@@ -310,10 +269,8 @@ namespace HealthLink.Api.Services
                     400
                 );
             }
-
             // Remove existing specializations
             _db.ExpertSpecializations.RemoveRange(expert.ExpertSpecializations);
-
             // Add new specializations
             foreach (var specId in specializationIds)
             {
@@ -323,14 +280,11 @@ namespace HealthLink.Api.Services
                     SpecializationId = specId
                 });
             }
-
             await _db.SaveChangesAsync();
         }
-
         public async Task<ExpertProfileDto> ApproveExpertAsync(long expertId, string? adminNote)
         {
             var expert = await _db.Experts.FindAsync(expertId);
-
             if (expert == null)
             {
                 throw new Common.BusinessException(
@@ -339,21 +293,15 @@ namespace HealthLink.Api.Services
                     404
                 );
             }
-
             expert.Status = Entities.Enums.ExpertStatus.Approved;
             expert.UpdatedAt = DateTime.UtcNow;
-
             // TODO: Store adminNote in a separate AdminAction table if needed
-
             await _db.SaveChangesAsync();
-
             return await GetExpertProfileAsync(expert.UserId);
         }
-
         public async Task<ExpertProfileDto> RejectExpertAsync(long expertId, string? adminNote)
         {
             var expert = await _db.Experts.FindAsync(expertId);
-
             if (expert == null)
             {
                 throw new Common.BusinessException(
@@ -362,24 +310,18 @@ namespace HealthLink.Api.Services
                     404
                 );
             }
-
             expert.Status = Entities.Enums.ExpertStatus.Rejected;
             expert.UpdatedAt = DateTime.UtcNow;
-
             // TODO: Store adminNote in a separate AdminAction table if needed
-
             await _db.SaveChangesAsync();
-
             return await GetExpertProfileAsync(expert.UserId);
         }
-
         public async Task<AvailabilityDto> GetAvailabilityAsync(long expertId, DateOnly date)
         {
             // Get expert's schedule template for the day
             var dayOfWeek = (int)date.DayOfWeek;
             var template = await _db.ExpertScheduleTemplates
                 .FirstOrDefaultAsync(x => x.ExpertId == expertId && x.DayOfWeek == dayOfWeek);
-
             if (template == null || !template.IsOpen)
             {
                 return new AvailabilityDto
@@ -389,11 +331,9 @@ namespace HealthLink.Api.Services
                     AvailableSlots = new List<TimeSlotDto>()
                 };
             }
-
             // Get existing appointments for the date
             var startOfDay = date.ToDateTime(TimeOnly.MinValue);
             var endOfDay = date.ToDateTime(TimeOnly.MaxValue);
-            
             var existingAppointments = await _db.Appointments
                 .Where(x => x.ExpertId == expertId 
                     && x.StartDateTime >= startOfDay 
@@ -401,24 +341,19 @@ namespace HealthLink.Api.Services
                     && x.Status == Entities.Enums.AppointmentStatus.Scheduled)
                 .Select(x => new { x.StartDateTime, x.EndDateTime })
                 .ToListAsync();
-
             // Generate time slots (45 minutes each, standard session duration)
             var slots = new List<TimeSlotDto>();
             var currentTime = template.WorkStartTime!.Value;
             var endTime = template.WorkEndTime!.Value;
-
             while (currentTime.AddMinutes(45) <= endTime)
             {
                 var slotStart = currentTime;
                 var slotEnd = currentTime.AddMinutes(45);
-                
                 var slotStartDateTime = date.ToDateTime(slotStart);
                 var slotEndDateTime = date.ToDateTime(slotEnd);
-
                 // Check if slot overlaps with existing appointments
                 var isAvailable = !existingAppointments.Any(apt =>
                     slotStartDateTime < apt.EndDateTime && slotEndDateTime > apt.StartDateTime);
-
                 if (isAvailable)
                 {
                     slots.Add(new TimeSlotDto
@@ -428,10 +363,8 @@ namespace HealthLink.Api.Services
                         DurationMinutes = 45
                     });
                 }
-
                 currentTime = currentTime.AddMinutes(45);
             }
-
             return new AvailabilityDto
             {
                 ExpertId = expertId,
@@ -439,5 +372,6 @@ namespace HealthLink.Api.Services
                 AvailableSlots = slots
             };
         }
+
     }
 }

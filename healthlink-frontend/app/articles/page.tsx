@@ -16,7 +16,8 @@ interface Article {
     slug: string;
     coverImageUrl: string | null;
     category: string | null;
-    bodyHtml: string;
+    bodyHtml?: string;
+    content?: string; // API returns this instead of bodyHtml
     publishedAt: string | null;
     createdAt: string;
 }
@@ -44,9 +45,10 @@ export default function ArticlesPage() {
         }
     };
 
-    // Extract read time from bodyHtml
-    const estimateReadTime = (bodyHtml: string) => {
-        const text = bodyHtml.replace(/<[^>]*>/g, '');
+    // Extract read time from bodyHtml or content
+    const estimateReadTime = (html: string | null | undefined) => {
+        if (!html) return '1 dakika';
+        const text = html.replace(/<[^>]*>/g, '');
         const words = text.split(/\s+/).length;
         const minutes = Math.ceil(words / 200); // Average reading speed
         return `${minutes} dakika`;
@@ -134,7 +136,7 @@ export default function ArticlesPage() {
                                             </Typography>
                                         </Box>
                                         <Typography variant="caption" color="text.secondary">
-                                            ⏱️ {estimateReadTime(article.bodyHtml)}
+                                            ⏱️ {estimateReadTime(article.bodyHtml || article.content)}
                                         </Typography>
                                     </Stack>
 
