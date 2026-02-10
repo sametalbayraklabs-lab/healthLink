@@ -35,6 +35,7 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
     const menuItems = [
         { label: 'Dashboard', path: '/expert/dashboard', icon: <DashboardIcon /> },
         { label: 'Profilim', path: '/expert/profile', icon: <PersonIcon /> },
+        { label: 'Takvim', path: '/expert/calendar', icon: <CalendarMonthIcon /> },
         { label: 'Danışanlarım', path: '/expert/clients', icon: <PeopleIcon /> },
         { label: 'Randevular', path: '/expert/appointments', icon: <CalendarMonthIcon /> },
         { label: 'Mesajlar', path: '/expert/messages', icon: <MessageIcon /> },

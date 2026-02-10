@@ -1,5 +1,6 @@
 using HealthLink.Api.Data;
 using HealthLink.Api.Dtos.Admin;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,8 +8,8 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/appointments")]
-// [Authorize(Roles = "Admin")] // TEMP: Disabled for testing
-public class AdminAppointmentsController : ControllerBase
+[Authorize(Roles = "Admin")]
+public class AdminAppointmentsController : BaseAuthenticatedController
 {
     private readonly AppDbContext _db;
 

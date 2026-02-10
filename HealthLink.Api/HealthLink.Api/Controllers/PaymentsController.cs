@@ -8,7 +8,7 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/payments")]
-public class PaymentsController : ControllerBase
+public class PaymentsController : BaseAuthenticatedController
 {
     private readonly IPaymentService _paymentService;
 
@@ -21,11 +21,10 @@ public class PaymentsController : ControllerBase
     /// Initiate payment
     /// </summary>
     [HttpPost("initiate")]
-    // [Authorize] // Temporarily disabled
+    [Authorize]
     public async Task<ActionResult<InitiatePaymentResponse>> Initiate([FromBody] InitiatePaymentRequest request)
     {
-        var userId = User.GetUserId();
-        var response = await _paymentService.InitiatePaymentAsync(userId, request);
+        var response = await _paymentService.InitiatePaymentAsync(UserId, request);
         return Ok(response);
     }
 
@@ -43,11 +42,10 @@ public class PaymentsController : ControllerBase
     /// Get my payment history
     /// </summary>
     [HttpGet("me")]
-    // [Authorize] // Temporarily disabled
+    [Authorize]
     public async Task<ActionResult<List<PaymentDto>>> GetMyPayments()
     {
-        var userId = User.GetUserId();
-        var payments = await _paymentService.GetMyPaymentsAsync(userId);
+        var payments = await _paymentService.GetMyPaymentsAsync(UserId);
         return Ok(payments);
     }
 
@@ -55,11 +53,10 @@ public class PaymentsController : ControllerBase
     /// Get payment by ID
     /// </summary>
     [HttpGet("{id}")]
-    // [Authorize] // Temporarily disabled
+    [Authorize]
     public async Task<ActionResult<PaymentDto>> GetById(long id)
     {
-        var userId = User.GetUserId();
-        var payment = await _paymentService.GetPaymentByIdAsync(userId, id);
+        var payment = await _paymentService.GetPaymentByIdAsync(UserId, id);
         return Ok(payment);
     }
 }

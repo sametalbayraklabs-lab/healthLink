@@ -51,7 +51,7 @@ export default function DiscountCodeTable() {
         try {
             const response = await fetch(`${API_URL}/api/admin/discount-codes`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 
@@ -75,7 +75,7 @@ export default function DiscountCodeTable() {
             const response = await fetch(`${API_URL}/api/admin/discount-codes/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 
@@ -123,6 +123,7 @@ export default function DiscountCodeTable() {
                             <TableCell>Açıklama</TableCell>
                             <TableCell>Tip</TableCell>
                             <TableCell>Değer</TableCell>
+                            <TableCell>Uzman Tipi</TableCell>
                             <TableCell>Kullanım</TableCell>
                             <TableCell>Geçerlilik</TableCell>
                             <TableCell>Durum</TableCell>
@@ -132,7 +133,7 @@ export default function DiscountCodeTable() {
                     <TableBody>
                         {codes.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} align="center">
+                                <TableCell colSpan={9} align="center">
                                     <Typography variant="body2" color="text.secondary">
                                         Henüz indirim kodu eklenmemiş
                                     </Typography>
@@ -155,6 +156,20 @@ export default function DiscountCodeTable() {
                                     </TableCell>
                                     <TableCell>
                                         {code.usedCount} / {code.maxUsageCount || '∞'}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={
+                                                code.applicableExpertType === 'All' ? 'Tümü' :
+                                                    code.applicableExpertType === 'Dietitian' ? 'Diyetisyen' :
+                                                        code.applicableExpertType === 'Psychologist' ? 'Psikolog' :
+                                                            code.applicableExpertType === 'SportsCoach' ? 'Spor Koçu' :
+                                                                code.applicableExpertType
+                                            }
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="caption">

@@ -684,6 +684,41 @@ namespace HealthLink.Api.Migrations
                     b.ToTable("Experts", (string)null);
                 });
 
+            modelBuilder.Entity("HealthLink.Api.Entities.ExpertAvailabilitySlot", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndDateTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("ExpertId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("StartDateTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpertId", "StartDateTime", "EndDateTime");
+
+                    b.ToTable("ExpertAvailabilitySlots", (string)null);
+                });
+
             modelBuilder.Entity("HealthLink.Api.Entities.ExpertCertificate", b =>
                 {
                     b.Property<long>("Id")
@@ -761,6 +796,11 @@ namespace HealthLink.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<bool>("AutoMarkAvailable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -776,18 +816,39 @@ namespace HealthLink.Api.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<TimeOnly?>("WorkEndTime")
-                        .HasColumnType("time without time zone");
-
-                    b.Property<TimeOnly?>("WorkStartTime")
-                        .HasColumnType("time without time zone");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ExpertId", "DayOfWeek")
                         .IsUnique();
 
                     b.ToTable("ExpertScheduleTemplates", (string)null);
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.ExpertScheduleTimeSlot", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<long>("TemplateId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TemplateId");
+
+                    b.ToTable("ExpertScheduleTimeSlots", (string)null);
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.ExpertSpecialization", b =>
@@ -1045,7 +1106,7 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7866),
+                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5872),
                             Currency = "TRY",
                             Description = "One online consultation session",
                             ExpertType = 0,
@@ -1057,7 +1118,7 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 2L,
-                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7869),
+                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5874),
                             Currency = "TRY",
                             Description = "Four online consultation sessions",
                             ExpertType = 0,
@@ -1113,7 +1174,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 1L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7838),
+                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5847),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Clinical Nutrition"
@@ -1122,7 +1183,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 2L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7840),
+                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5848),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Sports Nutrition"
@@ -1131,7 +1192,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 3L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7841),
+                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5849),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Weight Management"
@@ -1172,21 +1233,21 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7665),
+                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5640),
                             Key = "Platform.CommissionRate",
                             Value = "0.15"
                         },
                         new
                         {
                             Id = 2L,
-                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7668),
+                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5643),
                             Key = "Session.DefaultDurationMinutes",
                             Value = "30"
                         },
                         new
                         {
                             Id = 3L,
-                            CreatedAt = new DateTime(2026, 2, 4, 13, 39, 52, 525, DateTimeKind.Utc).AddTicks(7669),
+                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5644),
                             Key = "Session.CancelLimitHours",
                             Value = "24"
                         });
@@ -1454,6 +1515,17 @@ namespace HealthLink.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("HealthLink.Api.Entities.ExpertAvailabilitySlot", b =>
+                {
+                    b.HasOne("HealthLink.Api.Entities.Expert", "Expert")
+                        .WithMany()
+                        .HasForeignKey("ExpertId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Expert");
+                });
+
             modelBuilder.Entity("HealthLink.Api.Entities.ExpertCertificate", b =>
                 {
                     b.HasOne("HealthLink.Api.Entities.Expert", "Expert")
@@ -1485,6 +1557,17 @@ namespace HealthLink.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Expert");
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.ExpertScheduleTimeSlot", b =>
+                {
+                    b.HasOne("HealthLink.Api.Entities.ExpertScheduleTemplate", "Template")
+                        .WithMany("TimeSlots")
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Template");
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.ExpertSpecialization", b =>
@@ -1602,6 +1685,11 @@ namespace HealthLink.Api.Migrations
                     b.Navigation("ExpertCertificates");
 
                     b.Navigation("ExpertSpecializations");
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.ExpertScheduleTemplate", b =>
+                {
+                    b.Navigation("TimeSlots");
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.ServicePackage", b =>

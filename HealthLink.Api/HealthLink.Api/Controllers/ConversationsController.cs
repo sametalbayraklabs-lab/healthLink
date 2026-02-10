@@ -8,8 +8,8 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/conversations")]
-// [Authorize] // Temporarily disabled
-public class ConversationsController : ControllerBase
+[Authorize]
+public class ConversationsController : BaseAuthenticatedController
 {
     private readonly IMessagingService _messagingService;
 
@@ -21,32 +21,28 @@ public class ConversationsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<ConversationDto>>> GetMyConversations()
     {
-        var userId = User.GetUserId();
-        var conversations = await _messagingService.GetMyConversationsAsync(userId);
+        var conversations = await _messagingService.GetMyConversationsAsync(UserId);
         return Ok(conversations);
     }
 
     [HttpGet("{id}/messages")]
     public async Task<ActionResult<List<MessageDto>>> GetMessages(long id)
     {
-        var userId = User.GetUserId();
-        var messages = await _messagingService.GetConversationMessagesAsync(userId, id);
+        var messages = await _messagingService.GetConversationMessagesAsync(UserId, id);
         return Ok(messages);
     }
 
     [HttpPost("messages")]
     public async Task<ActionResult<MessageDto>> SendMessage([FromBody] SendMessageRequest request)
     {
-        var userId = User.GetUserId();
-        var message = await _messagingService.SendMessageAsync(userId, request);
+        var message = await _messagingService.SendMessageAsync(UserId, request);
         return Ok(message);
     }
 
     [HttpPost("{id}/mark-read")]
     public async Task<IActionResult> MarkAsRead(long id)
     {
-        var userId = User.GetUserId();
-        await _messagingService.MarkAsReadAsync(userId, id);
+        await _messagingService.MarkAsReadAsync(UserId, id);
         return NoContent();
     }
 }

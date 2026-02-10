@@ -19,6 +19,11 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
 
+interface LookupItem {
+    value: string;
+    label: string;
+}
+
 interface ServicePackage {
     id: number;
     name: string;
@@ -36,7 +41,7 @@ interface ServicePackageFormDialogProps {
     servicePackage: ServicePackage | null;
 }
 
-const expertTypes = ['All', 'Dietitian', 'Psychologist', 'SportsCoach'];
+
 
 export default function ServicePackageFormDialog({
     open,
@@ -52,6 +57,26 @@ export default function ServicePackageFormDialog({
         price: 0,
         isActive: true,
     });
+    const [expertTypes, setExpertTypes] = useState<LookupItem[]>([]);
+
+    useEffect(() => {
+        if (open) fetchLookups();
+    }, [open]);
+
+    const fetchLookups = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const res = await fetch(`${API_URL}/api/admin/lookups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setExpertTypes(data.expertTypes || []);
+            }
+        } catch (err) {
+            console.error('Error fetching lookups:', err);
+        }
+    };
 
     useEffect(() => {
         if (servicePackage) {
@@ -77,7 +102,7 @@ export default function ServicePackageFormDialog({
 
     const handleSubmit = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const url = servicePackage
                 ? `${API_URL}/api/admin/service-packages/${servicePackage.id}`
                 : `${API_URL}/api/admin/service-packages`;
@@ -138,13 +163,8 @@ export default function ServicePackageFormDialog({
                             label="Uzman Tipi"
                             onChange={(e) => setFormData({ ...formData, expertType: e.target.value })}
                         >
-                            {expertTypes.map((type) => (
-                                <MenuItem key={type} value={type}>
-                                    {type === 'All' ? 'Tümü' :
-                                        type === 'Dietitian' ? 'Diyetisyen' :
-                                            type === 'Psychologist' ? 'Psikolog' :
-                                                'Spor Koçu'}
-                                </MenuItem>
+                            {expertTypes.map((item) => (
+                                <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
                             ))}
                         </Select>
                     </FormControl>

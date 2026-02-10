@@ -32,6 +32,11 @@ import PaymentIcon from '@mui/icons-material/Payment';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
 
+interface LookupItem {
+    value: string;
+    label: string;
+}
+
 interface Payment {
     id: number;
     clientId: number;
@@ -63,15 +68,38 @@ export default function AdminPaymentsPage() {
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState<PaymentDetail | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [lookups, setLookups] = useState<{ paymentGateways: LookupItem[]; paymentStatuses: LookupItem[] }>({ paymentGateways: [], paymentStatuses: [] });
+
+    useEffect(() => {
+        fetchLookups();
+    }, []);
 
     useEffect(() => {
         fetchPayments();
     }, [filterStatus, filterGateway, page]);
 
+    const fetchLookups = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const res = await fetch(`${API_URL}/api/admin/lookups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setLookups({
+                    paymentGateways: data.paymentGateways || [],
+                    paymentStatuses: data.paymentStatuses || []
+                });
+            }
+        } catch (err) {
+            console.error('Lookups yüklenemedi:', err);
+        }
+    };
+
     const fetchPayments = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const params = new URLSearchParams();
             if (filterStatus) params.append('status', filterStatus);
             if (filterGateway) params.append('gateway', filterGateway);
@@ -98,7 +126,7 @@ export default function AdminPaymentsPage() {
     const fetchPaymentDetails = async (id: number) => {
         try {
             setDetailLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch(`${API_URL}/api/admin/payments/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -179,28 +207,26 @@ export default function AdminPaymentsPage() {
                         }}
                     >
                         <MenuItem value="">Tümü</MenuItem>
-                        <MenuItem value="Pending">Bekliyor</MenuItem>
-                        <MenuItem value="Success">Başarılı</MenuItem>
-                        <MenuItem value="Failed">Başarısız</MenuItem>
-                        <MenuItem value="Refunded">İade Edildi</MenuItem>
+                        {lookups.paymentStatuses.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
                 <FormControl sx={{ minWidth: 150 }}>
-                    <InputLabel>Gateway</InputLabel>
+                    <InputLabel>Ödeme Yöntemi</InputLabel>
                     <Select
                         value={filterGateway}
-                        label="Gateway"
+                        label="Ödeme Yöntemi"
                         onChange={(e) => {
                             setFilterGateway(e.target.value);
                             setPage(1);
                         }}
                     >
                         <MenuItem value="">Tümü</MenuItem>
-                        <MenuItem value="Iyzico">Iyzico</MenuItem>
-                        <MenuItem value="Stripe">Stripe</MenuItem>
-                        <MenuItem value="PayTR">PayTR</MenuItem>
-                        <MenuItem value="PayPal">PayPal</MenuItem>
+                        {lookups.paymentGateways.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
             </Box>
@@ -213,7 +239,7 @@ export default function AdminPaymentsPage() {
                             <TableCell>Paket</TableCell>
                             <TableCell align="right">Tutar</TableCell>
                             <TableCell>Ödeme Yöntemi</TableCell>
-                            <TableCell>Gateway</TableCell>
+                            <TableCell>Ödeme Altyapısı</TableCell>
                             <TableCell>Durum</TableCell>
                             <TableCell>Tarih</TableCell>
                             <TableCell align="right">İşlemler</TableCell>
@@ -285,14 +311,16 @@ export default function AdminPaymentsPage() {
                 </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" mt={3}>
-                <Pagination
-                    count={10}
-                    page={page}
-                    onChange={(e, value) => setPage(value)}
-                    color="primary"
-                />
-            </Box>
+            {payments.length >= 20 && (
+                <Box display="flex" justifyContent="center" mt={3}>
+                    <Pagination
+                        count={payments.length < 20 ? page : page + 1}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                        color="primary"
+                    />
+                </Box>
+            )}
 
             {/* Payment Detail Dialog */}
             <Dialog open={detailDialogOpen} onClose={() => setDetailDialogOpen(false)} maxWidth="md" fullWidth>
@@ -345,12 +373,12 @@ export default function AdminPaymentsPage() {
                                     <Typography variant="body1">{selectedPayment.paymentMethod}</Typography>
                                 </Grid>
                                 <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" color="text.secondary">Gateway</Typography>
+                                    <Typography variant="subtitle2" color="text.secondary">Ödeme Altyapısı</Typography>
                                     <Typography variant="body1">{getGatewayLabel(selectedPayment.gateway)}</Typography>
                                 </Grid>
                                 {selectedPayment.gatewayPaymentId && (
                                     <Grid item xs={12}>
-                                        <Typography variant="subtitle2" color="text.secondary">Gateway Payment ID</Typography>
+                                        <Typography variant="subtitle2" color="text.secondary">Ödeme İşlem ID</Typography>
                                         <Typography variant="body2" fontFamily="monospace">
                                             {selectedPayment.gatewayPaymentId}
                                         </Typography>

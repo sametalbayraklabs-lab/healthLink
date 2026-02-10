@@ -36,7 +36,7 @@ public class ContentController : ControllerBase
     }
 
     [HttpPost]
-    // [Authorize(Roles = "...")]
+    [Authorize(Roles = "Admin")] // Only admins can create content
     public async Task<ActionResult<ContentItemDto>> Create([FromBody] CreateContentRequest request)
     {
         var item = await _contentService.CreateContentAsync(request);
@@ -44,7 +44,7 @@ public class ContentController : ControllerBase
     }
 
     [HttpPost("{id}/publish")]
-    // [Authorize(Roles = "...")]
+    [Authorize(Roles = "Admin")] // Only admins can publish
     public async Task<ActionResult<ContentItemDto>> Publish(long id)
     {
         var item = await _contentService.PublishContentAsync(id);
@@ -69,18 +69,13 @@ public class ContentController : ControllerBase
     /// Like or dislike a content item
     /// </summary>
     [HttpPost("{id:long}/react")]
-    // [Authorize] // TODO: Re-enable after implementing proper authentication
+    [Authorize] // Requires authentication
     public async Task<ActionResult> React(long id, [FromBody] ContentReactionDto request)
     {
         var content = await _db.ContentItems.FindAsync(id);
         if (content == null) return NotFound();
 
-        var userIdClaim = User.FindFirst("userId")?.Value;
-        // Fallback to anonymous user for testing
-        if (!long.TryParse(userIdClaim, out var userId))
-        {
-            userId = 1; // Anonymous/test user
-        }
+        var userId = Common.UserHelper.GetUserId(User);
 
         var existingReaction = await _db.ContentItemReactions
             .FirstOrDefaultAsync(r => r.ContentItemId == id && r.UserId == userId);

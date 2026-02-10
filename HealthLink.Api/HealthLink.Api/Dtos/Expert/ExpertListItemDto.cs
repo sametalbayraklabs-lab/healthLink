@@ -14,6 +14,7 @@ public class ExpertListItemDto
     public DateOnly? ExperienceStartDate { get; set; }
     public decimal? AverageRating { get; set; }
     public int TotalReviewCount { get; set; }
+    public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<string> Specializations { get; set; } = new(); // Just names
 }

@@ -46,10 +46,10 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("change-password")]
-    // [Authorize] // Temporarily disabled
+    [Authorize]
     public async Task<ActionResult> ChangePassword(ChangePasswordRequestDto request)
     {
-        var userId = User.GetUserId();
+        var userId = UserHelper.GetUserId(User);
         await _auth.ChangePasswordAsync(userId, request);
         return Ok(new { success = true });
     }

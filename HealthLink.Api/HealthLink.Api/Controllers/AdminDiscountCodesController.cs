@@ -9,8 +9,8 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/discount-codes")]
-// [Authorize(Roles = "Admin")] // TEMP: Removed for testing
-public class AdminDiscountCodesController : ControllerBase
+[Authorize(Roles = "Admin")]
+public class AdminDiscountCodesController : BaseAuthenticatedController
 {
     private readonly AppDbContext _db;
 

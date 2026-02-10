@@ -1,4 +1,5 @@
 using HealthLink.Api.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,8 +7,8 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/dashboard")]
-// [Authorize(Roles = "Admin")] // TEMP: Disabled for testing
-public class AdminDashboardController : ControllerBase
+[Authorize(Roles = "Admin")]
+public class AdminDashboardController : BaseAuthenticatedController
 {
     private readonly AppDbContext _db;
 

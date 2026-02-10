@@ -34,6 +34,11 @@ import VideocamIcon from '@mui/icons-material/Videocam';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
 
+interface LookupItem {
+    value: string;
+    label: string;
+}
+
 interface Appointment {
     id: number;
     clientId: number;
@@ -66,15 +71,35 @@ export default function AdminAppointmentsPage() {
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDetail | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [lookups, setLookups] = useState<{ appointmentStatuses: LookupItem[] }>({ appointmentStatuses: [] });
+
+    useEffect(() => {
+        fetchLookups();
+    }, []);
 
     useEffect(() => {
         fetchAppointments();
     }, [filterStatus, filterExpertType, page]);
 
+    const fetchLookups = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const res = await fetch(`${API_URL}/api/admin/lookups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setLookups({ appointmentStatuses: data.appointmentStatuses || [] });
+            }
+        } catch (err) {
+            console.error('Lookups yüklenemedi:', err);
+        }
+    };
+
     const fetchAppointments = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const params = new URLSearchParams();
             if (filterStatus) params.append('status', filterStatus);
             if (filterExpertType) params.append('expertType', filterExpertType);
@@ -101,7 +126,7 @@ export default function AdminAppointmentsPage() {
     const fetchAppointmentDetails = async (id: number) => {
         try {
             setDetailLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch(`${API_URL}/api/admin/appointments/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -203,12 +228,9 @@ export default function AdminAppointmentsPage() {
                         }}
                     >
                         <MenuItem value="">Tümü</MenuItem>
-                        <MenuItem value="Scheduled">Planlandı</MenuItem>
-                        <MenuItem value="Completed">Tamamlandı</MenuItem>
-                        <MenuItem value="CancelledByClient">Danışan İptal</MenuItem>
-                        <MenuItem value="CancelledByExpert">Uzman İptal</MenuItem>
-                        <MenuItem value="NoShow">Katılmadı</MenuItem>
-                        <MenuItem value="Incomplete">Tamamlanmadı</MenuItem>
+                        {lookups.appointmentStatuses.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -299,14 +321,16 @@ export default function AdminAppointmentsPage() {
                 </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" mt={3}>
-                <Pagination
-                    count={10}
-                    page={page}
-                    onChange={(e, value) => setPage(value)}
-                    color="primary"
-                />
-            </Box>
+            {appointments.length >= 20 && (
+                <Box display="flex" justifyContent="center" mt={3}>
+                    <Pagination
+                        count={appointments.length < 20 ? page : page + 1}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                        color="primary"
+                    />
+                </Box>
+            )}
 
             {/* Appointment Detail Dialog */}
             <Dialog open={detailDialogOpen} onClose={() => setDetailDialogOpen(false)} maxWidth="md" fullWidth>

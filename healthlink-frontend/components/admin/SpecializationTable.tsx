@@ -27,6 +27,7 @@ interface Specialization {
     id: number;
     name: string;
     description?: string;
+    expertType: string;
     category: string;
     isActive: boolean;
 }
@@ -45,7 +46,7 @@ export default function SpecializationTable() {
         try {
             const response = await fetch(`${API_URL}/api/admin/specializations`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 
@@ -69,7 +70,7 @@ export default function SpecializationTable() {
             const response = await fetch(`${API_URL}/api/admin/specializations/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 
@@ -131,6 +132,7 @@ export default function SpecializationTable() {
                         <TableRow>
                             <TableCell>Ad</TableCell>
                             <TableCell>Açıklama</TableCell>
+                            <TableCell>Uzman Tipi</TableCell>
                             <TableCell>Kategori</TableCell>
                             <TableCell>Durum</TableCell>
                             <TableCell align="right">İşlemler</TableCell>
@@ -139,7 +141,7 @@ export default function SpecializationTable() {
                     <TableBody>
                         {specializations.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center">
+                                <TableCell colSpan={6} align="center">
                                     <Typography variant="body2" color="text.secondary">
                                         Henüz uzmanlık alanı eklenmemiş
                                     </Typography>
@@ -154,6 +156,9 @@ export default function SpecializationTable() {
                                         </Typography>
                                     </TableCell>
                                     <TableCell>{spec.description || '-'}</TableCell>
+                                    <TableCell>
+                                        <Chip label={spec.expertType} size="small" color="primary" variant="outlined" />
+                                    </TableCell>
                                     <TableCell>
                                         <Chip label={spec.category} size="small" variant="outlined" />
                                     </TableCell>

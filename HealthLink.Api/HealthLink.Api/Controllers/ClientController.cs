@@ -1,13 +1,14 @@
 using HealthLink.Api.Dtos.Client;
 using HealthLink.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ClientController : ControllerBase
+[Authorize(Roles = "Client")]
+public class ClientController : BaseAuthenticatedController
 {
     private readonly IClientService _service;
 
@@ -16,31 +17,7 @@ public class ClientController : ControllerBase
         _service = service;
     }
 
-    // Temporary solution: Parse userId from JWT token manually
-    // TODO: Properly implement JWT authentication middleware
-    private long UserId
-    {
-        get
-        {
-            var authHeader = Request.Headers["Authorization"].ToString();
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-            {
-                throw new UnauthorizedAccessException("No valid authorization header");
-            }
 
-            var token = authHeader.Substring("Bearer ".Length).Trim();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-            var subClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub");
-            
-            if (subClaim == null || !long.TryParse(subClaim.Value, out var userId))
-            {
-                throw new UnauthorizedAccessException("Invalid token: missing or invalid 'sub' claim");
-            }
-
-            return userId;
-        }
-    }
 
     [HttpGet("profile")]
     public async Task<ActionResult<ClientProfileResponse>> GetProfile()

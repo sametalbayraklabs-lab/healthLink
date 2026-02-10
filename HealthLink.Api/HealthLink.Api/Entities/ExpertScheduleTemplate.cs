@@ -11,9 +11,9 @@
 
         public bool IsOpen { get; set; }
 
-        public TimeOnly? WorkStartTime { get; set; }
+        public bool AutoMarkAvailable { get; set; } = true; // Default: auto-mark slots as available
 
-        public TimeOnly? WorkEndTime { get; set; }
+        public ICollection<ExpertScheduleTimeSlot> TimeSlots { get; set; } = new List<ExpertScheduleTimeSlot>();
 
         public DateTime CreatedAt { get; set; }
 

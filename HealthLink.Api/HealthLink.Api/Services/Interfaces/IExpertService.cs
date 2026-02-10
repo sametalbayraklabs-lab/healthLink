@@ -20,8 +20,10 @@ public interface IExpertService
     Task<ExpertProfileDto> ApproveExpertAsync(long expertId, string? adminNote);
     Task<ExpertProfileDto> RejectExpertAsync(long expertId, string? adminNote);
     Task<PagedResult<ExpertListItemDto>> GetAllExpertsForAdminAsync(
+        string? search,
         string? expertType,
         string? city,
+        bool? isActive,
         int page = 1,
         int pageSize = 50);
     

@@ -9,8 +9,8 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/specializations")]
-// [Authorize] // TEMP: Completely removed to test
-public class AdminSpecializationsController : ControllerBase
+[Authorize(Roles = "Admin")]
+public class AdminSpecializationsController : BaseAuthenticatedController
 {
     private readonly AppDbContext _db;
 
@@ -44,6 +44,7 @@ public class AdminSpecializationsController : ControllerBase
             Id = s.Id,
             Name = s.Name,
             Description = s.Description,
+            ExpertType = s.ExpertType,
             Category = s.Category,
             IsActive = s.IsActive,
             CreatedAt = s.CreatedAt,
@@ -67,6 +68,7 @@ public class AdminSpecializationsController : ControllerBase
             Id = specialization.Id,
             Name = specialization.Name,
             Description = specialization.Description,
+            ExpertType = specialization.ExpertType,
             Category = specialization.Category,
             IsActive = specialization.IsActive,
             CreatedAt = specialization.CreatedAt,
@@ -91,6 +93,7 @@ public class AdminSpecializationsController : ControllerBase
         {
             Name = request.Name,
             Description = request.Description,
+            ExpertType = request.ExpertType,
             Category = request.Category,
             IsActive = request.IsActive,
             CreatedAt = DateTime.UtcNow
@@ -104,6 +107,7 @@ public class AdminSpecializationsController : ControllerBase
             Id = specialization.Id,
             Name = specialization.Name,
             Description = specialization.Description,
+            ExpertType = specialization.ExpertType,
             Category = specialization.Category,
             IsActive = specialization.IsActive,
             CreatedAt = specialization.CreatedAt,
@@ -124,6 +128,7 @@ public class AdminSpecializationsController : ControllerBase
 
         if (request.Name != null) specialization.Name = request.Name;
         if (request.Description != null) specialization.Description = request.Description;
+        if (request.ExpertType.HasValue) specialization.ExpertType = request.ExpertType.Value;
         if (request.Category.HasValue) specialization.Category = request.Category.Value;
         if (request.IsActive.HasValue) specialization.IsActive = request.IsActive.Value;
 
@@ -136,6 +141,7 @@ public class AdminSpecializationsController : ControllerBase
             Id = specialization.Id,
             Name = specialization.Name,
             Description = specialization.Description,
+            ExpertType = specialization.ExpertType,
             Category = specialization.Category,
             IsActive = specialization.IsActive,
             CreatedAt = specialization.CreatedAt,

@@ -34,7 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } catch (error) {
                 console.error('Failed to parse user data:', error);
                 localStorage.removeItem('accessToken');
-                localStorage.removeItem('token');
                 localStorage.removeItem('user');
             }
         }
@@ -47,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { accessToken, user: userData } = response.data;
 
             localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('token', accessToken); // Backward compatibility
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
 
@@ -73,7 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { accessToken, user: userData } = response.data;
 
             localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('token', accessToken); // Backward compatibility
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
 
@@ -90,7 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { accessToken, user: userData } = response.data;
 
             localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('token', accessToken); // Backward compatibility
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
 
@@ -103,7 +99,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = () => {
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
         router.push('/login');

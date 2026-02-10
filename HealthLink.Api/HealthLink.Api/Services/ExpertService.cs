@@ -188,8 +188,10 @@ namespace HealthLink.Api.Services
             };
         }
         public async Task<Common.PagedResult<ExpertListItemDto>> GetAllExpertsForAdminAsync(
+            string? search,
             string? expertType,
             string? city,
+            bool? isActive,
             int page = 1,
             int pageSize = 50)
         {
@@ -197,7 +199,20 @@ namespace HealthLink.Api.Services
                 .Include(x => x.User)
                 .Include(x => x.ExpertSpecializations)
                     .ThenInclude(es => es.Specialization)
-                .Where(x => x.IsActive);
+                .AsQueryable();
+            // Search by name or email
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.ToLower();
+                query = query.Where(x =>
+                    (x.DisplayName != null && x.DisplayName.ToLower().Contains(s)) ||
+                    x.User.Email.ToLower().Contains(s));
+            }
+            // Filter by isActive (optional - admin sees all by default)
+            if (isActive.HasValue)
+            {
+                query = query.Where(x => x.IsActive == isActive.Value);
+            }
             // Filter by expertType
             if (!string.IsNullOrWhiteSpace(expertType))
             {
@@ -229,6 +244,7 @@ namespace HealthLink.Api.Services
                     ExperienceStartDate = x.ExperienceStartDate,
                     AverageRating = x.AverageRating,
                     TotalReviewCount = x.TotalReviewCount,
+                    IsActive = x.IsActive,
                     CreatedAt = x.CreatedAt,
                     Specializations = x.ExpertSpecializations
                         .Select(es => es.Specialization.Name)
@@ -321,8 +337,9 @@ namespace HealthLink.Api.Services
             // Get expert's schedule template for the day
             var dayOfWeek = (int)date.DayOfWeek;
             var template = await _db.ExpertScheduleTemplates
+                .Include(x => x.TimeSlots)
                 .FirstOrDefaultAsync(x => x.ExpertId == expertId && x.DayOfWeek == dayOfWeek);
-            if (template == null || !template.IsOpen)
+            if (template == null || !template.IsOpen || template.TimeSlots.Count == 0)
             {
                 return new AvailabilityDto
                 {
@@ -341,30 +358,37 @@ namespace HealthLink.Api.Services
                     && x.Status == Entities.Enums.AppointmentStatus.Scheduled)
                 .Select(x => new { x.StartDateTime, x.EndDateTime })
                 .ToListAsync();
-            // Generate time slots (45 minutes each, standard session duration)
+            // Generate time slots (30 minutes each, standard session duration)
             var slots = new List<TimeSlotDto>();
-            var currentTime = template.WorkStartTime!.Value;
-            var endTime = template.WorkEndTime!.Value;
-            while (currentTime.AddMinutes(45) <= endTime)
+            
+            // Generate slots for each time range
+            foreach (var timeSlot in template.TimeSlots.OrderBy(ts => ts.StartTime))
             {
-                var slotStart = currentTime;
-                var slotEnd = currentTime.AddMinutes(45);
-                var slotStartDateTime = date.ToDateTime(slotStart);
-                var slotEndDateTime = date.ToDateTime(slotEnd);
-                // Check if slot overlaps with existing appointments
-                var isAvailable = !existingAppointments.Any(apt =>
-                    slotStartDateTime < apt.EndDateTime && slotEndDateTime > apt.StartDateTime);
-                if (isAvailable)
+                var currentTime = timeSlot.StartTime;
+                var endTime = timeSlot.EndTime;
+                
+                while (currentTime.AddMinutes(30) <= endTime)
                 {
-                    slots.Add(new TimeSlotDto
+                    var slotStart = currentTime;
+                    var slotEnd = currentTime.AddMinutes(30);
+                    var slotStartDateTime = date.ToDateTime(slotStart);
+                    var slotEndDateTime = date.ToDateTime(slotEnd);
+                    // Check if slot overlaps with existing appointments
+                    var isAvailable = !existingAppointments.Any(apt =>
+                        slotStartDateTime < apt.EndDateTime && slotEndDateTime > apt.StartDateTime);
+                    if (isAvailable)
                     {
-                        StartTime = slotStart,
-                        EndTime = slotEnd,
-                        DurationMinutes = 45
-                    });
+                        slots.Add(new TimeSlotDto
+                        {
+                            StartTime = slotStart,
+                            EndTime = slotEnd,
+                            DurationMinutes = 30
+                        });
+                    }
+                    currentTime = currentTime.AddMinutes(30);
                 }
-                currentTime = currentTime.AddMinutes(45);
             }
+            
             return new AvailabilityDto
             {
                 ExpertId = expertId,

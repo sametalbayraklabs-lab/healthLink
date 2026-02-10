@@ -28,7 +28,9 @@ namespace HealthLink.Api.Data
         public DbSet<AppointmentNote> AppointmentNotes => Set<AppointmentNote>();
         public DbSet<AppointmentReport> AppointmentReports => Set<AppointmentReport>();
         public DbSet<ExpertScheduleTemplate> ExpertScheduleTemplates => Set<ExpertScheduleTemplate>();
+        public DbSet<ExpertScheduleTimeSlot> ExpertScheduleTimeSlots => Set<ExpertScheduleTimeSlot>();
         public DbSet<ExpertScheduleException> ExpertScheduleExceptions => Set<ExpertScheduleException>();
+        public DbSet<ExpertAvailabilitySlot> ExpertAvailabilitySlots => Set<ExpertAvailabilitySlot>();
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<Complaint> Complaints => Set<Complaint>();
         public DbSet<Conversation> Conversations => Set<Conversation>();
@@ -573,11 +575,9 @@ namespace HealthLink.Api.Data
                 entity.Property(x => x.IsOpen)
                       .IsRequired();
 
-                entity.Property(x => x.WorkStartTime)
-                      .IsRequired(false);
-
-                entity.Property(x => x.WorkEndTime)
-                      .IsRequired(false);
+                entity.Property(x => x.AutoMarkAvailable)
+                      .IsRequired()
+                      .HasDefaultValue(true);
 
                 entity.Property(x => x.CreatedAt)
                       .IsRequired();
@@ -590,9 +590,35 @@ namespace HealthLink.Api.Data
                       .HasForeignKey(x => x.ExpertId)
                       .OnDelete(DeleteBehavior.Cascade);
 
+                entity.HasMany(x => x.TimeSlots)
+                      .WithOne(x => x.Template)
+                      .HasForeignKey(x => x.TemplateId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
                 // Aynı gün için tek şablon
                 entity.HasIndex(x => new { x.ExpertId, x.DayOfWeek })
                       .IsUnique();
+            });
+
+            modelBuilder.Entity<ExpertScheduleTimeSlot>(entity =>
+            {
+                entity.ToTable("ExpertScheduleTimeSlots");
+
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.StartTime)
+                      .IsRequired();
+
+                entity.Property(x => x.EndTime)
+                      .IsRequired();
+
+                entity.Property(x => x.CreatedAt)
+                      .IsRequired();
+
+                entity.HasOne(x => x.Template)
+                      .WithMany(x => x.TimeSlots)
+                      .HasForeignKey(x => x.TemplateId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<ExpertScheduleException>(entity =>
@@ -625,6 +651,37 @@ namespace HealthLink.Api.Data
                       .WithMany()
                       .HasForeignKey(x => x.ExpertId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ExpertAvailabilitySlot>(entity =>
+            {
+                entity.ToTable("ExpertAvailabilitySlots");
+
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.StartDateTime)
+                      .IsRequired();
+
+                entity.Property(x => x.EndDateTime)
+                      .IsRequired();
+
+                entity.Property(x => x.Status)
+                      .IsRequired()
+                      .HasDefaultValue(SlotStatus.Available);
+
+                entity.Property(x => x.CreatedAt)
+                      .IsRequired();
+
+                entity.Property(x => x.UpdatedAt)
+                      .IsRequired(false);
+
+                entity.HasOne(x => x.Expert)
+                      .WithMany()
+                      .HasForeignKey(x => x.ExpertId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Index for querying slots by expert and date range
+                entity.HasIndex(x => new { x.ExpertId, x.StartDateTime, x.EndDateTime });
             });
 
             modelBuilder.Entity<Review>(entity =>

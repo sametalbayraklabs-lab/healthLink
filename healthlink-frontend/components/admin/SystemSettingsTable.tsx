@@ -44,7 +44,7 @@ export default function SystemSettingsTable() {
         try {
             const response = await fetch(`${API_URL}/api/admin/system-settings`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 
@@ -74,7 +74,7 @@ export default function SystemSettingsTable() {
             const response = await fetch(`${API_URL}/api/admin/system-settings/${key}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ value: editValue }),
@@ -102,7 +102,7 @@ export default function SystemSettingsTable() {
             const response = await fetch(`${API_URL}/api/admin/system-settings/${key}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 

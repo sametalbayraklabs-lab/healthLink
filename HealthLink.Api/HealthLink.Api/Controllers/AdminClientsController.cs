@@ -1,5 +1,6 @@
 using HealthLink.Api.Data;
 using HealthLink.Api.Dtos.Admin;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,8 +8,8 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/clients")]
-// [Authorize(Roles = "Admin")] // TEMP: Disabled for testing
-public class AdminClientsController : ControllerBase
+[Authorize(Roles = "Admin")]
+public class AdminClientsController : BaseAuthenticatedController
 {
     private readonly AppDbContext _db;
 
@@ -127,6 +128,27 @@ public class AdminClientsController : ControllerBase
         await _db.SaveChangesAsync();
 
         // Return updated details
+        return await GetById(id);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<AdminClientDetailDto>> UpdateClient(long id, AdminClientUpdateDto request)
+    {
+        var client = await _db.Clients
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (client == null)
+            return NotFound();
+
+        if (request.FirstName != null) client.FirstName = request.FirstName;
+        if (request.LastName != null) client.LastName = request.LastName;
+        if (request.Gender.HasValue) client.Gender = (Entities.Enums.Gender)request.Gender.Value;
+        if (request.BirthDate.HasValue) client.BirthDate = request.BirthDate.Value;
+
+        client.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
         return await GetById(id);
     }
 }

@@ -1,13 +1,15 @@
+using HealthLink.Api.Common;
 using HealthLink.Api.Dtos.Appointments;
 using HealthLink.Api.Services.Interfaces;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+namespace HealthLink.Api.Controllers;
+
 [ApiController]
 [Route("api/appointments")]
-// [Authorize] // Temporarily disabled
-public class AppointmentsController : ControllerBase
+[Authorize]
+public class AppointmentsController : BaseAuthenticatedController
 {
     private readonly IAppointmentService _service;
 
@@ -20,25 +22,21 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> Create(
         [FromBody] CreateAppointmentRequest request)
     {
-        var userId = long.Parse(User.FindFirst("userId")!.Value);
-
-        var result = await _service.CreateAsync(userId, request);
+        var result = await _service.CreateAsync(UserId, request);
         return Ok(result);
     }
 
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Cancel(long id)
     {
-        var userId = long.Parse(User.FindFirst("userId")!.Value);
-        await _service.CancelAsync(userId, id);
+        await _service.CancelAsync(UserId, id);
         return NoContent();
     }
 
     [HttpPost("{id}/incomplete")]
     public async Task<IActionResult> Incomplete(long id)
     {
-        var userId = long.Parse(User.FindFirst("userId")!.Value);
-        await _service.MarkIncompleteAsync(userId, id);
+        await _service.MarkIncompleteAsync(UserId, id);
         return NoContent();
     }
 

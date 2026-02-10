@@ -46,7 +46,7 @@ export default function ContentItemTable() {
         try {
             const response = await fetch(`${API_URL}/api/admin/content-items`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 
@@ -70,7 +70,7 @@ export default function ContentItemTable() {
             const response = await fetch(`${API_URL}/api/admin/content-items/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 

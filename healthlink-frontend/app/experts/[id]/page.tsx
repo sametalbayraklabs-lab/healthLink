@@ -96,7 +96,7 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
         try {
             const response = await fetch(`${API_URL}/api/client-packages/me`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 

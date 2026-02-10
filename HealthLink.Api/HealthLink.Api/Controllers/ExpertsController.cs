@@ -1,9 +1,13 @@
 using HealthLink.Api.Common;
+using HealthLink.Api.Data;
+using HealthLink.Api.Dtos.Admin;
 using HealthLink.Api.Dtos.Expert;
+using HealthLink.Api.Entities.Enums;
 using HealthLink.Api.Services.Interfaces;
 using HealthLink.Api.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthLink.Api.Controllers;
 
@@ -12,26 +16,28 @@ namespace HealthLink.Api.Controllers;
 public class ExpertsController : ControllerBase
 {
     private readonly IExpertService _expertService;
+    private readonly AppDbContext _db;
 
-    public ExpertsController(IExpertService expertService)
+    public ExpertsController(IExpertService expertService, AppDbContext db)
     {
         _expertService = expertService;
+        _db = db;
     }
 
     [HttpGet("me")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Expert")] // Only experts
     public async Task<ActionResult<ExpertProfileDto>> GetMe()
     {
-        var userId = User.GetUserId();
+        var userId = Common.UserHelper.GetUserId(User);
         var result = await _expertService.GetExpertProfileAsync(userId);
         return Ok(result);
     }
 
     [HttpPut("me")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Expert")] // Only experts
     public async Task<ActionResult<ExpertProfileDto>> UpdateMe(UpdateExpertRequestDto request)
     {
-        var userId = User.GetUserId();
+        var userId = Common.UserHelper.GetUserId(User);
         var result = await _expertService.UpdateExpertProfileAsync(userId, request);
         return Ok(result);
     }
@@ -57,24 +63,26 @@ public class ExpertsController : ControllerBase
     }
 
     [HttpGet("admin/all")]
-    // // [Authorize] // Temporarily disabled // Temporarily removed - will fix JWT auth later
+    [Authorize(Roles = "Admin")] // Only admins
     public async Task<ActionResult<PagedResult<ExpertListItemDto>>> GetAllExpertsForAdmin(
+        [FromQuery] string? search,
         [FromQuery] string? expertType,
         [FromQuery] string? city,
+        [FromQuery] bool? isActive,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
-        var result = await _expertService.GetAllExpertsForAdminAsync(expertType, city, page, pageSize);
+        var result = await _expertService.GetAllExpertsForAdminAsync(search, expertType, city, isActive, page, pageSize);
         return Ok(result);
     }
 
     [HttpPut("me/specializations")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Expert")] // Only experts
     public async Task<ActionResult> SetSpecializations(SetSpecializationsRequestDto request)
     {
-        var userId = User.GetUserId();
+        var userId = Common.UserHelper.GetUserId(User);
         await _expertService.SetSpecializationsAsync(userId, request.SpecializationIds);
-        return Ok(new { expertId = User.GetExpertId(), specializationIds = request.SpecializationIds });
+        return Ok(new { expertId = Common.UserHelper.GetExpertId(User), specializationIds = request.SpecializationIds });
     }
 
     [HttpPut("{id}/approve")]
@@ -108,6 +116,67 @@ public class ExpertsController : ControllerBase
 
         var result = await _expertService.GetAvailabilityAsync(id, parsedDate);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Admin: Update expert details
+    /// </summary>
+    [HttpPut("admin/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> AdminUpdateExpert(long id, AdminExpertUpdateDto request)
+    {
+        var expert = await _db.Experts
+            .Include(e => e.User)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        if (expert == null)
+            return NotFound();
+
+        if (request.DisplayName != null) expert.DisplayName = request.DisplayName;
+        if (request.Bio != null) expert.Bio = request.Bio;
+        if (request.City != null) expert.City = request.City;
+        if (request.ExpertType.HasValue) expert.ExpertType = (ExpertType)request.ExpertType.Value;
+        if (request.WorkType.HasValue) expert.WorkType = (WorkType)request.WorkType.Value;
+        if (request.Status.HasValue) expert.Status = (ExpertStatus)request.Status.Value;
+        if (request.ExperienceStartDate.HasValue) expert.ExperienceStartDate = request.ExperienceStartDate.Value;
+        if (request.IsActive.HasValue) expert.IsActive = request.IsActive.Value;
+
+        expert.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            expert.Id,
+            expert.UserId,
+            expert.DisplayName,
+            Email = expert.User.Email,
+            ExpertType = expert.ExpertType.ToString(),
+            Status = expert.Status.ToString(),
+            expert.Bio,
+            expert.City,
+            WorkType = expert.WorkType?.ToString(),
+            expert.ExperienceStartDate,
+            expert.IsActive,
+            expert.CreatedAt,
+            expert.UpdatedAt
+        });
+    }
+
+    /// <summary>
+    /// Admin: Toggle expert active status
+    /// </summary>
+    [HttpPut("admin/{id}/toggle-active")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> AdminToggleExpertActive(long id)
+    {
+        var expert = await _db.Experts.FindAsync(id);
+        if (expert == null) return NotFound();
+
+        expert.IsActive = !expert.IsActive;
+        expert.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { expert.Id, expert.IsActive });
     }
 }
 

@@ -17,6 +17,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.Converters.Add(new HealthLink.Api.Common.TimeOnlyJsonConverter());
+        options.JsonSerializerOptions.Converters.Add(new HealthLink.Api.Common.NullableTimeOnlyJsonConverter());
     });
 
 // DbContext
@@ -118,12 +120,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            // TEMPORARY: Validation disabled for development
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = false,
-            ValidateIssuerSigningKey = false,
-            RoleClaimType = "role"
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            ),
+            ClockSkew = TimeSpan.Zero
         };
 
         // DEBUG: Log JWT events
@@ -167,13 +173,28 @@ app.UseHttpsRedirection();
 // CORS
 app.UseCors();
 
-// Custom JWT Middleware (for development - parses token without strict validation)
-app.UseMiddleware<HealthLink.Api.Middleware.SimpleJwtMiddleware>();
+// JWT Middleware removed - using built-in ASP.NET Core authentication
 
 // Authentication & Authorization
 app.UseAuthentication();
-// app.UseAuthorization(); // TEMP: Disabled to debug 403
+app.UseAuthorization();
 
 app.MapControllers();
+
+// Seed database with test data
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        await SeedData.Initialize(services);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Error seeding database: {ex.Message}");
+        Console.WriteLine($"❌ Inner Exception: {ex.InnerException?.Message}");
+        Console.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
+    }
+}
 
 app.Run();

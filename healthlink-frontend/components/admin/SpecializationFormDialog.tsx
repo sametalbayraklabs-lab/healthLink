@@ -18,10 +18,16 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
 
+interface LookupItem {
+    value: string;
+    label: string;
+}
+
 interface Specialization {
     id?: number;
     name: string;
     description?: string;
+    expertType: string;
     category: string;
     isActive: boolean;
 }
@@ -33,11 +39,7 @@ interface SpecializationFormDialogProps {
     specialization?: Specialization | null;
 }
 
-const categories = [
-    'Psychologist',
-    'Dietitian',
-    'SportsCoach',
-];
+
 
 export default function SpecializationFormDialog({
     open,
@@ -48,10 +50,16 @@ export default function SpecializationFormDialog({
     const [formData, setFormData] = useState<Specialization>({
         name: '',
         description: '',
+        expertType: 'Dietitian',
         category: 'Psychologist',
         isActive: true,
     });
     const [loading, setLoading] = useState(false);
+    const [lookups, setLookups] = useState<{ expertTypes: LookupItem[]; specializationCategories: LookupItem[] }>({ expertTypes: [], specializationCategories: [] });
+
+    useEffect(() => {
+        if (open) fetchLookups();
+    }, [open]);
 
     useEffect(() => {
         if (specialization) {
@@ -60,11 +68,30 @@ export default function SpecializationFormDialog({
             setFormData({
                 name: '',
                 description: '',
+                expertType: 'Dietitian',
                 category: 'Psychologist',
                 isActive: true,
             });
         }
     }, [specialization, open]);
+
+    const fetchLookups = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const res = await fetch(`${API_URL}/api/admin/lookups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setLookups({
+                    expertTypes: data.expertTypes || [],
+                    specializationCategories: data.specializationCategories || []
+                });
+            }
+        } catch (err) {
+            console.error('Error fetching lookups:', err);
+        }
+    };
 
     const handleSubmit = async () => {
         setLoading(true);
@@ -75,24 +102,18 @@ export default function SpecializationFormDialog({
 
             const method = specialization ? 'PUT' : 'POST';
 
-            const body = specialization
-                ? {
-                    name: formData.name,
-                    description: formData.description,
-                    category: formData.category,
-                    isActive: formData.isActive,
-                }
-                : {
-                    name: formData.name,
-                    description: formData.description,
-                    category: formData.category,
-                    isActive: formData.isActive,
-                };
+            const body = {
+                name: formData.name,
+                description: formData.description,
+                expertType: formData.expertType,
+                category: formData.category,
+                isActive: formData.isActive,
+            };
 
             const response = await fetch(url, {
                 method,
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(body),
@@ -150,18 +171,27 @@ export default function SpecializationFormDialog({
                 />
 
                 <FormControl fullWidth margin="normal" required>
+                    <InputLabel>Uzman Tipi</InputLabel>
+                    <Select
+                        value={formData.expertType}
+                        label="Uzman Tipi"
+                        onChange={(e) => setFormData({ ...formData, expertType: e.target.value })}
+                    >
+                        {lookups.expertTypes.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                <FormControl fullWidth margin="normal" required>
                     <InputLabel>Kategori</InputLabel>
                     <Select
                         value={formData.category}
                         label="Kategori"
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     >
-                        {categories.map((cat) => (
-                            <MenuItem key={cat} value={cat}>
-                                {cat === 'Psychologist' ? 'Psikolog' :
-                                    cat === 'Dietitian' ? 'Diyetisyen' :
-                                        'Spor Koçu'}
-                            </MenuItem>
+                        {lookups.specializationCategories.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>

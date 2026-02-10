@@ -34,14 +34,15 @@ public class JwtTokenGenerator
 
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new Claim("userId", userId.ToString()), // Custom claim for controllers
+            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()), // JWT standard
             new Claim(JwtRegisteredClaimNames.Email, email)
         };
 
-        // Add role claims (use short claim type for better compatibility)
+        // Add role claims (use ClaimTypes.Role for ASP.NET Core compatibility)
         foreach (var role in roles)
         {
-            claims.Add(new Claim("role", role));
+            claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
         // Add clientId if present

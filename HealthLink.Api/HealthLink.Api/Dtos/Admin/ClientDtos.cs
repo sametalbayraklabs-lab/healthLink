@@ -37,3 +37,11 @@ public class ToggleClientActiveDto
 {
     public bool IsActive { get; set; }
 }
+
+public class AdminClientUpdateDto
+{
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public int? Gender { get; set; }
+    public DateTime? BirthDate { get; set; }
+}

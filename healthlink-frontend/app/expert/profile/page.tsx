@@ -55,7 +55,7 @@ const expertTypeLabels: Record<string, string> = {
 };
 
 export default function ExpertProfilePage() {
-    const { token } = useAuth();
+    const { user } = useAuth();
     const [profile, setProfile] = useState<ExpertProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [editMode, setEditMode] = useState(false);
@@ -81,7 +81,7 @@ export default function ExpertProfilePage() {
             setLoading(true);
             const response = await fetch(`${API_URL}/api/expert/profile`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 }
             });
 
@@ -132,7 +132,7 @@ export default function ExpertProfilePage() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 },
                 body: JSON.stringify(formData)
             });

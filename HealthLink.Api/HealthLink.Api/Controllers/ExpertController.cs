@@ -7,7 +7,8 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/expert")]
-public class ExpertController : ControllerBase
+[Authorize(Roles = "Expert")] // Only experts can access these endpoints
+public class ExpertController : BaseAuthenticatedController
 {
     private readonly IExpertService _service;
 
@@ -16,13 +17,10 @@ public class ExpertController : ControllerBase
         _service = service;
     }
 
-    private long UserId => long.Parse(User.FindFirst("userId")?.Value ?? "18"); // Fallback to test expert
-
     /// <summary>
     /// Get current expert's profile
     /// </summary>
     [HttpGet("profile")]
-    // [Authorize(Roles = "Expert")] // TODO: Re-enable after auth is fixed
     public async Task<ActionResult<ExpertProfileDto>> GetProfile()
     {
         var profile = await _service.GetExpertProfileAsync(UserId);
@@ -33,7 +31,6 @@ public class ExpertController : ControllerBase
     /// Update current expert's profile
     /// </summary>
     [HttpPut("profile")]
-    // [Authorize(Roles = "Expert")] // TODO: Re-enable after auth is fixed
     public async Task<ActionResult<ExpertProfileDto>> UpdateProfile([FromBody] UpdateExpertRequestDto request)
     {
         var profile = await _service.UpdateExpertProfileAsync(UserId, request);
@@ -44,6 +41,7 @@ public class ExpertController : ControllerBase
     /// Get expert's availability for a specific date
     /// </summary>
     [HttpGet("{id:long}/availability")]
+    [AllowAnonymous] // Public endpoint
     public async Task<ActionResult<AvailabilityDto>> GetAvailability(long id, [FromQuery] DateOnly date)
     {
         var result = await _service.GetAvailabilityAsync(id, date);

@@ -18,7 +18,6 @@ import {
     Avatar,
     Rating,
     Badge,
-    Autocomplete,
 } from '@mui/material';
 import { LocalizationProvider, DateCalendar } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -26,6 +25,26 @@ import dayjs, { Dayjs } from 'dayjs';
 import { Availability, TimeSlot } from '@/types/expert';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
+
+const getExpertTypeLabel = (type: string) => {
+    switch (type) {
+        case 'All': return 'Tümü';
+        case 'Dietitian': return 'Diyetisyen';
+        case 'Psychologist': return 'Psikolog';
+        case 'SportsCoach': return 'Spor Koçu';
+        default: return type;
+    }
+};
+
+interface LookupItem {
+    value: string;
+    label: string;
+}
+
+interface LookupItem {
+    value: string;
+    label: string;
+}
 
 interface ExpertListItem {
     id: number;
@@ -55,42 +74,12 @@ export default function NewAppointmentPage() {
     // Filters
     const [onlyMyPackages, setOnlyMyPackages] = useState(false);
     const [expertType, setExpertType] = useState('');
-    const [specializations, setSpecializations] = useState<Specialization[]>([]);
-    const [selectedSpecializations, setSelectedSpecializations] = useState<Specialization[]>([]);
 
     useEffect(() => {
         fetchExperts();
         fetchMyPackages();
-    }, [expertType, selectedSpecializations]);
-
-    useEffect(() => {
-        if (expertType) {
-            fetchSpecializations();
-        } else {
-            setSpecializations([]);
-            setSelectedSpecializations([]);
-        }
     }, [expertType]);
 
-    const fetchSpecializations = async () => {
-        try {
-            const params = new URLSearchParams();
-            if (expertType) params.append('expertType', expertType);
-
-            const response = await fetch(`${API_URL}/api/specializations?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setSpecializations(data);
-            }
-        } catch (error) {
-            console.error('Error fetching specializations:', error);
-        }
-    };
 
     const fetchExperts = async () => {
         try {
@@ -104,7 +93,7 @@ export default function NewAppointmentPage() {
 
             const response = await fetch(`${API_URL}/api/experts?${params}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 
@@ -121,7 +110,7 @@ export default function NewAppointmentPage() {
         try {
             const response = await fetch(`${API_URL}/api/client-packages/me`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
 
@@ -153,7 +142,7 @@ export default function NewAppointmentPage() {
                 `${API_URL}/api/experts/${selectedExpert.id}/availability?date=${dateStr}`,
                 {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                     },
                 }
             );
@@ -181,7 +170,7 @@ export default function NewAppointmentPage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
                 body: JSON.stringify({
                     expertId: selectedExpert.id,
@@ -236,35 +225,10 @@ export default function NewAppointmentPage() {
                                 sx={{ minWidth: 200 }}
                             >
                                 <MenuItem value="">Tümü</MenuItem>
-                                <MenuItem value="Psychologist">Psikolog</MenuItem>
                                 <MenuItem value="Dietitian">Diyetisyen</MenuItem>
+                                <MenuItem value="Psychologist">Psikolog</MenuItem>
+                                <MenuItem value="SportsCoach">Spor Koçu</MenuItem>
                             </TextField>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={6}>
-                            <Autocomplete
-                                multiple
-                                options={specializations}
-                                getOptionLabel={(option) => option.name}
-                                value={selectedSpecializations}
-                                onChange={(_, newValue) => setSelectedSpecializations(newValue)}
-                                disabled={!expertType}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Uzmanlık Alanları"
-                                        placeholder={expertType ? "Seçiniz..." : "Önce uzman türü seçin"}
-                                    />
-                                )}
-                                renderTags={(value, getTagProps) =>
-                                    value.map((option, index) => (
-                                        <Chip
-                                            label={option.name}
-                                            {...getTagProps({ index })}
-                                            size="small"
-                                        />
-                                    ))
-                                }
-                            />
                         </Grid>
                     </Grid>
                 </Paper>
@@ -325,7 +289,7 @@ export default function NewAppointmentPage() {
                                                 {expert.displayName || 'İsimsiz Uzman'}
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                {expert.expertType === 'Psychologist' ? 'Psikolog' : 'Diyetisyen'}
+                                                {getExpertTypeLabel(expert.expertType)}
                                             </Typography>
                                             <Rating value={expert.averageRating || 0} readOnly size="small" />
                                         </Box>
@@ -408,7 +372,7 @@ export default function NewAppointmentPage() {
                                         {selectedExpert.displayName || 'İsimsiz Uzman'}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        {selectedExpert.expertType === 'Psychologist' ? 'Psikolog' : 'Diyetisyen'}
+                                        {getExpertTypeLabel(selectedExpert.expertType)}
                                     </Typography>
                                     <Box display="flex" alignItems="center" gap={1} mt={1}>
                                         <Rating value={selectedExpert.averageRating || 0} readOnly />

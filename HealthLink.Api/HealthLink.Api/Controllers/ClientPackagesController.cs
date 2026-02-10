@@ -8,8 +8,8 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/client-packages")]
-// [Authorize] // Temporarily disabled
-public class ClientPackagesController : ControllerBase
+[Authorize(Roles = "Client")]
+public class ClientPackagesController : BaseAuthenticatedController
 {
     private readonly IClientPackageService _clientPackageService;
 
@@ -24,8 +24,7 @@ public class ClientPackagesController : ControllerBase
     [HttpGet("me")]
     public async Task<ActionResult<List<ClientPackageDto>>> GetMyPackages()
     {
-        var userId = User.GetUserId();
-        var packages = await _clientPackageService.GetMyPackagesAsync(userId);
+        var packages = await _clientPackageService.GetMyPackagesAsync(UserId);
         return Ok(packages);
     }
 
@@ -35,8 +34,7 @@ public class ClientPackagesController : ControllerBase
     [HttpPost("purchase")]
     public async Task<ActionResult<PurchasePackageResponse>> Purchase([FromBody] PurchasePackageRequest request)
     {
-        var userId = User.GetUserId();
-        var response = await _clientPackageService.PurchasePackageAsync(userId, request);
+        var response = await _clientPackageService.PurchasePackageAsync(UserId, request);
         return Ok(response);
     }
 
@@ -46,8 +44,7 @@ public class ClientPackagesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ClientPackageDto>> GetById(long id)
     {
-        var userId = User.GetUserId();
-        var package = await _clientPackageService.GetPackageByIdAsync(userId, id);
+        var package = await _clientPackageService.GetPackageByIdAsync(UserId, id);
         return Ok(package);
     }
 }

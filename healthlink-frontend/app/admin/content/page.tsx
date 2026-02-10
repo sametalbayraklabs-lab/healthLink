@@ -40,6 +40,11 @@ import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
 
+interface LookupItem {
+    value: string;
+    label: string;
+}
+
 interface ContentItem {
     id: number;
     title: string;
@@ -96,15 +101,38 @@ export default function AdminContentPage() {
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [lookups, setLookups] = useState<{ contentItemStatuses: LookupItem[]; contentItemTypes: LookupItem[] }>({ contentItemStatuses: [], contentItemTypes: [] });
+
+    useEffect(() => {
+        fetchLookups();
+    }, []);
 
     useEffect(() => {
         fetchContents();
     }, [filterStatus, filterType, page]);
 
+    const fetchLookups = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const res = await fetch(`${API_URL}/api/admin/lookups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setLookups({
+                    contentItemStatuses: data.contentItemStatuses || [],
+                    contentItemTypes: data.contentItemTypes || []
+                });
+            }
+        } catch (err) {
+            console.error('Lookups yüklenemedi:', err);
+        }
+    };
+
     const fetchContents = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const params = new URLSearchParams();
             if (filterStatus) params.append('status', filterStatus);
             if (filterType) params.append('type', filterType);
@@ -128,7 +156,7 @@ export default function AdminContentPage() {
     const fetchContentDetails = async (id: number) => {
         try {
             setDetailLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch(`${API_URL}/api/admin/content/${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -151,7 +179,7 @@ export default function AdminContentPage() {
 
     const handleEdit = async (id: number) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch(`${API_URL}/api/admin/content/${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -178,7 +206,7 @@ export default function AdminContentPage() {
     const handleFormSubmit = async () => {
         try {
             setFormLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const url = editingId
                 ? `${API_URL}/api/admin/content/${editingId}`
                 : `${API_URL}/api/admin/content`;
@@ -210,7 +238,7 @@ export default function AdminContentPage() {
 
     const handleStatusChange = async (id: number, status: string) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             await fetch(`${API_URL}/api/admin/content/${id}/status`, {
                 method: 'PUT',
                 headers: {
@@ -231,7 +259,7 @@ export default function AdminContentPage() {
     const handleDelete = async () => {
         if (!deleteId) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             await fetch(`${API_URL}/api/admin/content/${deleteId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -306,10 +334,9 @@ export default function AdminContentPage() {
                         onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
                     >
                         <MenuItem value="">Tümü</MenuItem>
-                        <MenuItem value="Draft">Taslak</MenuItem>
-                        <MenuItem value="PendingApproval">Onay Bekliyor</MenuItem>
-                        <MenuItem value="Published">Yayında</MenuItem>
-                        <MenuItem value="Archived">Arşivlenmiş</MenuItem>
+                        {lookups.contentItemStatuses.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -321,9 +348,9 @@ export default function AdminContentPage() {
                         onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
                     >
                         <MenuItem value="">Tümü</MenuItem>
-                        <MenuItem value="Blog">Blog</MenuItem>
-                        <MenuItem value="Recipe">Tarif</MenuItem>
-                        <MenuItem value="Announcement">Duyuru</MenuItem>
+                        {lookups.contentItemTypes.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -401,9 +428,11 @@ export default function AdminContentPage() {
                 </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" mt={3}>
-                <Pagination count={10} page={page} onChange={(e, value) => setPage(value)} color="primary" />
-            </Box>
+            {contents.length >= 20 && (
+                <Box display="flex" justifyContent="center" mt={3}>
+                    <Pagination count={contents.length < 20 ? page : page + 1} page={page} onChange={(e, value) => setPage(value)} color="primary" />
+                </Box>
+            )}
 
             {/* Detail Dialog */}
             <Dialog open={detailDialogOpen} onClose={() => setDetailDialogOpen(false)} maxWidth="md" fullWidth>
@@ -494,9 +523,9 @@ export default function AdminContentPage() {
                                 <FormControl fullWidth>
                                     <InputLabel>Tip</InputLabel>
                                     <Select value={formData.type} label="Tip" onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
-                                        <MenuItem value="Blog">Blog</MenuItem>
-                                        <MenuItem value="Recipe">Tarif</MenuItem>
-                                        <MenuItem value="Announcement">Duyuru</MenuItem>
+                                        {lookups.contentItemTypes.map((item) => (
+                                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                                        ))}
                                     </Select>
                                 </FormControl>
                             </Grid>

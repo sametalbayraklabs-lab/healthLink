@@ -9,8 +9,8 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/service-packages")]
-// [Authorize(Roles = "Admin")] // TEMP: Disabled for testing
-public class AdminServicePackagesController : ControllerBase
+[Authorize(Roles = "Admin")]
+public class AdminServicePackagesController : BaseAuthenticatedController
 {
     private readonly AppDbContext _db;
 

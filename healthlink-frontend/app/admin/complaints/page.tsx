@@ -33,6 +33,11 @@ import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
 
+interface LookupItem {
+    value: string;
+    label: string;
+}
+
 interface Complaint {
     id: number;
     clientId: number | null;
@@ -68,15 +73,38 @@ export default function AdminComplaintsPage() {
     const [detailLoading, setDetailLoading] = useState(false);
     const [adminNote, setAdminNote] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
+    const [lookups, setLookups] = useState<{ complaintStatuses: LookupItem[]; complaintCategories: LookupItem[] }>({ complaintStatuses: [], complaintCategories: [] });
+
+    useEffect(() => {
+        fetchLookups();
+    }, []);
 
     useEffect(() => {
         fetchComplaints();
     }, [filterStatus, filterCategory, page]);
 
+    const fetchLookups = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const res = await fetch(`${API_URL}/api/admin/lookups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setLookups({
+                    complaintStatuses: data.complaintStatuses || [],
+                    complaintCategories: data.complaintCategories || []
+                });
+            }
+        } catch (err) {
+            console.error('Lookups yüklenemedi:', err);
+        }
+    };
+
     const fetchComplaints = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const params = new URLSearchParams();
             if (filterStatus) params.append('status', filterStatus);
             if (filterCategory) params.append('category', filterCategory);
@@ -103,7 +131,7 @@ export default function AdminComplaintsPage() {
     const fetchComplaintDetails = async (id: number) => {
         try {
             setDetailLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch(`${API_URL}/api/admin/complaints/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -128,7 +156,7 @@ export default function AdminComplaintsPage() {
 
         try {
             setActionLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch(`${API_URL}/api/admin/complaints/${selectedComplaint.id}/action`, {
                 method: 'PUT',
                 headers: {
@@ -221,10 +249,9 @@ export default function AdminComplaintsPage() {
                         }}
                     >
                         <MenuItem value="">Tümü</MenuItem>
-                        <MenuItem value="Open">Açık</MenuItem>
-                        <MenuItem value="InReview">İnceleniyor</MenuItem>
-                        <MenuItem value="Resolved">Çözüldü</MenuItem>
-                        <MenuItem value="Rejected">Reddedildi</MenuItem>
+                        {lookups.complaintStatuses.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -239,9 +266,9 @@ export default function AdminComplaintsPage() {
                         }}
                     >
                         <MenuItem value="">Tümü</MenuItem>
-                        <MenuItem value="Expert">Uzman</MenuItem>
-                        <MenuItem value="System">Sistem</MenuItem>
-                        <MenuItem value="Payment">Ödeme</MenuItem>
+                        {lookups.complaintCategories.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
             </Box>
@@ -308,14 +335,16 @@ export default function AdminComplaintsPage() {
                 </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" mt={3}>
-                <Pagination
-                    count={10}
-                    page={page}
-                    onChange={(e, value) => setPage(value)}
-                    color="primary"
-                />
-            </Box>
+            {complaints.length >= 20 && (
+                <Box display="flex" justifyContent="center" mt={3}>
+                    <Pagination
+                        count={complaints.length < 20 ? page : page + 1}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                        color="primary"
+                    />
+                </Box>
+            )}
 
             {/* Complaint Detail Dialog */}
             <Dialog open={detailDialogOpen} onClose={() => setDetailDialogOpen(false)} maxWidth="md" fullWidth>

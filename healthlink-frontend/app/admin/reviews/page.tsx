@@ -36,6 +36,11 @@ import StarIcon from '@mui/icons-material/Star';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
 
+interface LookupItem {
+    value: string;
+    label: string;
+}
+
 interface Review {
     id: number;
     appointmentId: number;
@@ -69,15 +74,35 @@ export default function AdminReviewsPage() {
     const [detailLoading, setDetailLoading] = useState(false);
     const [adminNote, setAdminNote] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
+    const [lookups, setLookups] = useState<{ reviewStatuses: LookupItem[] }>({ reviewStatuses: [] });
+
+    useEffect(() => {
+        fetchLookups();
+    }, []);
 
     useEffect(() => {
         fetchReviews();
     }, [filterStatus, filterRating, page]);
 
+    const fetchLookups = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const res = await fetch(`${API_URL}/api/admin/lookups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setLookups({ reviewStatuses: data.reviewStatuses || [] });
+            }
+        } catch (err) {
+            console.error('Lookups yüklenemedi:', err);
+        }
+    };
+
     const fetchReviews = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const params = new URLSearchParams();
             if (filterStatus) params.append('status', filterStatus);
             if (filterRating) params.append('rating', filterRating);
@@ -104,7 +129,7 @@ export default function AdminReviewsPage() {
     const fetchReviewDetails = async (id: number) => {
         try {
             setDetailLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch(`${API_URL}/api/admin/reviews/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -129,7 +154,7 @@ export default function AdminReviewsPage() {
 
         try {
             setActionLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch(`${API_URL}/api/admin/reviews/${selectedReview.id}/action`, {
                 method: 'PUT',
                 headers: {
@@ -209,9 +234,9 @@ export default function AdminReviewsPage() {
                         }}
                     >
                         <MenuItem value="">Tümü</MenuItem>
-                        <MenuItem value="PendingApproval">Onay Bekliyor</MenuItem>
-                        <MenuItem value="Approved">Onaylandı</MenuItem>
-                        <MenuItem value="Rejected">Reddedildi</MenuItem>
+                        {lookups.reviewStatuses.map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -316,14 +341,16 @@ export default function AdminReviewsPage() {
                 </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" mt={3}>
-                <Pagination
-                    count={10}
-                    page={page}
-                    onChange={(e, value) => setPage(value)}
-                    color="primary"
-                />
-            </Box>
+            {reviews.length >= 20 && (
+                <Box display="flex" justifyContent="center" mt={3}>
+                    <Pagination
+                        count={reviews.length < 20 ? page : page + 1}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                        color="primary"
+                    />
+                </Box>
+            )}
 
             {/* Review Detail Dialog */}
             <Dialog open={detailDialogOpen} onClose={() => setDetailDialogOpen(false)} maxWidth="md" fullWidth>

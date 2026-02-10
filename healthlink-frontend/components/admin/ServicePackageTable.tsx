@@ -31,6 +31,11 @@ import ServicePackageFormDialog from './ServicePackageFormDialog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
 
+interface LookupItem {
+    value: string;
+    label: string;
+}
+
 interface ServicePackage {
     id: number;
     name: string;
@@ -52,15 +57,35 @@ export default function ServicePackageTable() {
     const [packageToDelete, setPackageToDelete] = useState<ServicePackage | null>(null);
     const [filterExpertType, setFilterExpertType] = useState<string>('');
     const [filterActive, setFilterActive] = useState<string>('');
+    const [lookups, setLookups] = useState<{ expertTypes: LookupItem[] }>({ expertTypes: [] });
+
+    useEffect(() => {
+        fetchLookups();
+    }, []);
 
     useEffect(() => {
         fetchPackages();
     }, [filterExpertType, filterActive]);
 
+    const fetchLookups = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const res = await fetch(`${API_URL}/api/admin/lookups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setLookups({ expertTypes: data.expertTypes || [] });
+            }
+        } catch (err) {
+            console.error('Error fetching lookups:', err);
+        }
+    };
+
     const fetchPackages = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const params = new URLSearchParams();
             if (filterExpertType) params.append('expertType', filterExpertType);
             if (filterActive) params.append('isActive', filterActive);
@@ -86,7 +111,7 @@ export default function ServicePackageTable() {
         if (!packageToDelete) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch(`${API_URL}/api/admin/service-packages/${packageToDelete.id}`, {
                 method: 'DELETE',
                 headers: {
@@ -152,10 +177,9 @@ export default function ServicePackageTable() {
                         onChange={(e) => setFilterExpertType(e.target.value)}
                     >
                         <MenuItem value="">Tümü</MenuItem>
-                        <MenuItem value="All">Tümü</MenuItem>
-                        <MenuItem value="Dietitian">Diyetisyen</MenuItem>
-                        <MenuItem value="Psychologist">Psikolog</MenuItem>
-                        <MenuItem value="SportsCoach">Spor Koçu</MenuItem>
+                        {lookups.expertTypes.filter((item) => item.value !== 'All').map((item) => (
+                            <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 

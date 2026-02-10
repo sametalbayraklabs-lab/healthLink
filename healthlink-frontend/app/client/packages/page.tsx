@@ -28,6 +28,16 @@ interface ClientPackage {
     purchaseDate: string;
 }
 
+const getExpertTypeLabel = (type: string) => {
+    switch (type) {
+        case 'All': return 'Tümü';
+        case 'Dietitian': return 'Diyetisyen';
+        case 'Psychologist': return 'Psikolog';
+        case 'SportsCoach': return 'Spor Koçu';
+        default: return type;
+    }
+};
+
 export default function PackagesPage() {
     const router = useRouter();
     const [availablePackages, setAvailablePackages] = useState<ServicePackage[]>([]);
@@ -97,7 +107,7 @@ export default function PackagesPage() {
                                             </Box>
 
                                             <Typography variant="body2" color="text.secondary" paragraph>
-                                                {pkg.expertType === 'Psychologist' ? 'Psikolog' : 'Diyetisyen'}
+                                                {getExpertTypeLabel(pkg.expertType)}
                                             </Typography>
 
                                             <Box sx={{ mt: 3 }}>
@@ -147,7 +157,7 @@ export default function PackagesPage() {
                                         {pkg.name}
                                     </Typography>
                                     <Chip
-                                        label={pkg.expertType === 'Psychologist' ? 'Psikolog' : 'Diyetisyen'}
+                                        label={getExpertTypeLabel(pkg.expertType)}
                                         size="small"
                                         color="primary"
                                     />
@@ -162,10 +172,7 @@ export default function PackagesPage() {
                                         <strong>Seans Sayısı:</strong> {pkg.sessionCount}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        <strong>Seans Süresi:</strong> {pkg.durationMinutes} dakika
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        <strong>Hizmet Tipi:</strong> {pkg.serviceType}
+                                        <strong>Uzman Tipi:</strong> {getExpertTypeLabel(pkg.expertType)}
                                     </Typography>
                                 </Box>
 

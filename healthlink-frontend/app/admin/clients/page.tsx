@@ -25,13 +25,16 @@ import {
     DialogContent,
     DialogActions,
     Button,
-    Grid,
     Pagination,
+    Tooltip,
+    Stack,
+    Alert,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
 import PersonIcon from '@mui/icons-material/Person';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
+import BlockIcon from '@mui/icons-material/Block';
+import api from '@/lib/api';
 
 interface Client {
     id: number;
@@ -52,15 +55,34 @@ interface ClientDetail extends Client {
     totalSpent: number;
 }
 
+const genderOptions = [
+    { value: 0, label: 'Bilinmiyor' },
+    { value: 1, label: 'Erkek' },
+    { value: 2, label: 'Kadın' },
+    { value: 3, label: 'Diğer' },
+];
+
 export default function AdminClientsPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [filterActive, setFilterActive] = useState<string>('');
     const [page, setPage] = useState(1);
+    const [success, setSuccess] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    // Detail dialog
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<ClientDetail | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    // Edit dialog
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editForm, setEditForm] = useState({
+        firstName: '',
+        lastName: '',
+        gender: 0,
+        birthDate: '',
+    });
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         fetchClients();
@@ -69,25 +91,16 @@ export default function AdminClientsPage() {
     const fetchClients = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
             const params = new URLSearchParams();
             if (search) params.append('search', search);
             if (filterActive) params.append('isActive', filterActive);
             params.append('page', page.toString());
             params.append('pageSize', '20');
 
-            const response = await fetch(`${API_URL}/api/admin/clients?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch clients');
-
-            const data = await response.json();
-            setClients(data);
-        } catch (error) {
-            console.error('Error fetching clients:', error);
+            const response = await api.get(`/api/admin/clients?${params}`);
+            setClients(response.data);
+        } catch (err) {
+            console.error('Error fetching clients:', err);
         } finally {
             setLoading(false);
         }
@@ -96,46 +109,61 @@ export default function AdminClientsPage() {
     const fetchClientDetails = async (id: number) => {
         try {
             setDetailLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/admin/clients/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch client details');
-
-            const data = await response.json();
-            setSelectedClient(data);
+            const response = await api.get(`/api/admin/clients/${id}`);
+            setSelectedClient(response.data);
             setDetailDialogOpen(true);
-        } catch (error) {
-            console.error('Error fetching client details:', error);
+        } catch (err) {
+            console.error('Error fetching client details:', err);
         } finally {
             setDetailLoading(false);
         }
     };
 
-    const toggleClientActive = async () => {
-        if (!selectedClient) return;
-
+    const toggleClientActive = async (client: Client) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/admin/clients/${selectedClient.id}/toggle-active`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ isActive: !selectedClient.isActive }),
+            await api.put(`/api/admin/clients/${client.id}/toggle-active`, {
+                isActive: !client.isActive,
             });
+            setSuccess(`${client.firstName} ${client.lastName} ${client.isActive ? 'pasife alındı' : 'aktif yapıldı'}!`);
+            fetchClients();
+            if (selectedClient && selectedClient.id === client.id) {
+                setSelectedClient({ ...selectedClient, isActive: !client.isActive });
+            }
+        } catch (err) {
+            console.error('Error toggling client status:', err);
+            setError('İşlem sırasında hata oluştu');
+        }
+    };
 
-            if (!response.ok) throw new Error('Failed to toggle client status');
+    const openEditDialog = (client: Client) => {
+        setEditForm({
+            firstName: client.firstName,
+            lastName: client.lastName,
+            gender: getGenderValue(client.gender),
+            birthDate: client.birthDate ? client.birthDate.split('T')[0] : '',
+        });
+        setSelectedClient(client as ClientDetail);
+        setEditDialogOpen(true);
+    };
 
-            const updatedClient = await response.json();
-            setSelectedClient(updatedClient);
-            fetchClients(); // Refresh list
-        } catch (error) {
-            console.error('Error toggling client status:', error);
+    const handleSaveEdit = async () => {
+        if (!selectedClient) return;
+        try {
+            setSaving(true);
+            await api.put(`/api/admin/clients/${selectedClient.id}`, {
+                firstName: editForm.firstName,
+                lastName: editForm.lastName,
+                gender: editForm.gender,
+                birthDate: editForm.birthDate ? new Date(editForm.birthDate).toISOString() : null,
+            });
+            setSuccess('Danışan bilgileri güncellendi!');
+            setEditDialogOpen(false);
+            fetchClients();
+        } catch (err) {
+            console.error('Error updating client:', err);
+            setError('Güncelleme sırasında hata oluştu');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -145,7 +173,18 @@ export default function AdminClientsPage() {
             case 'Male': return 'Erkek';
             case 'Female': return 'Kadın';
             case 'Other': return 'Diğer';
+            case 'Unknown': return 'Bilinmiyor';
             default: return gender;
+        }
+    };
+
+    const getGenderValue = (gender: string | null): number => {
+        if (!gender) return 0;
+        switch (gender) {
+            case 'Male': return 1;
+            case 'Female': return 2;
+            case 'Other': return 3;
+            default: return 0;
         }
     };
 
@@ -177,8 +216,20 @@ export default function AdminClientsPage() {
                 Danışan Yönetimi
             </Typography>
             <Typography variant="body1" color="text.secondary" paragraph>
-                Tüm danışanları görüntüleyin ve yönetin
+                Tüm danışanları görüntüleyin, düzenleyin ve yönetin
             </Typography>
+
+            {error && (
+                <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+                    {error}
+                </Alert>
+            )}
+
+            {success && (
+                <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess(null)}>
+                    {success}
+                </Alert>
+            )}
 
             <Box display="flex" gap={2} mb={3}>
                 <TextField
@@ -218,7 +269,7 @@ export default function AdminClientsPage() {
                             <TableCell>Yaş</TableCell>
                             <TableCell>Durum</TableCell>
                             <TableCell>Kayıt Tarihi</TableCell>
-                            <TableCell align="right">İşlemler</TableCell>
+                            <TableCell align="center">İşlemler</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -230,7 +281,7 @@ export default function AdminClientsPage() {
                             </TableRow>
                         ) : (
                             clients.map((client) => (
-                                <TableRow key={client.id}>
+                                <TableRow key={client.id} sx={{ opacity: client.isActive ? 1 : 0.5 }}>
                                     <TableCell>
                                         <Box display="flex" alignItems="center" gap={1}>
                                             <PersonIcon fontSize="small" color="action" />
@@ -252,13 +303,35 @@ export default function AdminClientsPage() {
                                     <TableCell>
                                         {new Date(client.createdAt).toLocaleDateString('tr-TR')}
                                     </TableCell>
-                                    <TableCell align="right">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => fetchClientDetails(client.id)}
-                                        >
-                                            <VisibilityIcon fontSize="small" />
-                                        </IconButton>
+                                    <TableCell align="center">
+                                        <Stack direction="row" spacing={1} justifyContent="center">
+                                            <Tooltip title="Detaylar">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => fetchClientDetails(client.id)}
+                                                >
+                                                    <VisibilityIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Düzenle">
+                                                <IconButton
+                                                    size="small"
+                                                    color="primary"
+                                                    onClick={() => openEditDialog(client)}
+                                                >
+                                                    <EditIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title={client.isActive ? 'Pasife Al' : 'Aktif Yap'}>
+                                                <IconButton
+                                                    size="small"
+                                                    color={client.isActive ? 'error' : 'success'}
+                                                    onClick={() => toggleClientActive(client)}
+                                                >
+                                                    <BlockIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Stack>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -267,14 +340,16 @@ export default function AdminClientsPage() {
                 </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" mt={3}>
-                <Pagination
-                    count={10}
-                    page={page}
-                    onChange={(e, value) => setPage(value)}
-                    color="primary"
-                />
-            </Box>
+            {clients.length >= 20 && (
+                <Box display="flex" justifyContent="center" mt={3}>
+                    <Pagination
+                        count={clients.length < 20 ? page : page + 1}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                        color="primary"
+                    />
+                </Box>
+            )}
 
             {/* Client Detail Dialog */}
             <Dialog open={detailDialogOpen} onClose={() => setDetailDialogOpen(false)} maxWidth="md" fullWidth>
@@ -286,82 +361,76 @@ export default function AdminClientsPage() {
                         </Box>
                     ) : selectedClient && (
                         <Box mt={2}>
-                            <Grid container spacing={3}>
-                                <Grid item xs={12} md={6}>
+                            <Box display="grid" gridTemplateColumns="1fr 1fr" gap={3}>
+                                <Box>
                                     <Typography variant="subtitle2" color="text.secondary">Ad Soyad</Typography>
                                     <Typography variant="body1" fontWeight="medium">
                                         {selectedClient.firstName} {selectedClient.lastName}
                                     </Typography>
-                                </Grid>
-                                <Grid item xs={12} md={6}>
+                                </Box>
+                                <Box>
                                     <Typography variant="subtitle2" color="text.secondary">Email</Typography>
                                     <Typography variant="body1">{selectedClient.email}</Typography>
-                                </Grid>
-                                <Grid item xs={12} md={6}>
+                                </Box>
+                                <Box>
                                     <Typography variant="subtitle2" color="text.secondary">Cinsiyet</Typography>
                                     <Typography variant="body1">{getGenderLabel(selectedClient.gender)}</Typography>
-                                </Grid>
-                                <Grid item xs={12} md={6}>
+                                </Box>
+                                <Box>
                                     <Typography variant="subtitle2" color="text.secondary">Doğum Tarihi</Typography>
                                     <Typography variant="body1">
                                         {selectedClient.birthDate
                                             ? new Date(selectedClient.birthDate).toLocaleDateString('tr-TR')
                                             : '-'}
                                     </Typography>
-                                </Grid>
-                                <Grid item xs={12} md={6}>
+                                </Box>
+                                <Box>
                                     <Typography variant="subtitle2" color="text.secondary">Kayıt Tarihi</Typography>
                                     <Typography variant="body1">
                                         {new Date(selectedClient.createdAt).toLocaleDateString('tr-TR')}
                                     </Typography>
-                                </Grid>
-                                <Grid item xs={12} md={6}>
+                                </Box>
+                                <Box>
                                     <Typography variant="subtitle2" color="text.secondary">Durum</Typography>
                                     <Chip
                                         label={selectedClient.isActive ? 'Aktif' : 'Pasif'}
                                         color={selectedClient.isActive ? 'success' : 'default'}
                                         size="small"
                                     />
-                                </Grid>
-                            </Grid>
+                                </Box>
+                            </Box>
 
                             <Box mt={4}>
                                 <Typography variant="h6" gutterBottom>İstatistikler</Typography>
-                                <Grid container spacing={2}>
-                                    <Grid item xs={4}>
-                                        <Paper sx={{ p: 2, textAlign: 'center' }}>
-                                            <Typography variant="h4" color="primary">
-                                                {selectedClient.totalPackages}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Toplam Paket
-                                            </Typography>
-                                        </Paper>
-                                    </Grid>
-                                    <Grid item xs={4}>
-                                        <Paper sx={{ p: 2, textAlign: 'center' }}>
-                                            <Typography variant="h4" color="secondary">
-                                                {selectedClient.totalAppointments}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Toplam Randevu
-                                            </Typography>
-                                        </Paper>
-                                    </Grid>
-                                    <Grid item xs={4}>
-                                        <Paper sx={{ p: 2, textAlign: 'center' }}>
-                                            <Typography variant="h4" color="success.main">
-                                                ₺{selectedClient.totalSpent.toLocaleString('tr-TR', {
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 2
-                                                })}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Toplam Harcama
-                                            </Typography>
-                                        </Paper>
-                                    </Grid>
-                                </Grid>
+                                <Box display="grid" gridTemplateColumns="1fr 1fr 1fr" gap={2}>
+                                    <Paper sx={{ p: 2, textAlign: 'center' }}>
+                                        <Typography variant="h4" color="primary">
+                                            {selectedClient.totalPackages}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Toplam Paket
+                                        </Typography>
+                                    </Paper>
+                                    <Paper sx={{ p: 2, textAlign: 'center' }}>
+                                        <Typography variant="h4" color="secondary">
+                                            {selectedClient.totalAppointments}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Toplam Randevu
+                                        </Typography>
+                                    </Paper>
+                                    <Paper sx={{ p: 2, textAlign: 'center' }}>
+                                        <Typography variant="h4" color="success.main">
+                                            ₺{selectedClient.totalSpent.toLocaleString('tr-TR', {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            })}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Toplam Harcama
+                                        </Typography>
+                                    </Paper>
+                                </Box>
                             </Box>
                         </Box>
                     )}
@@ -370,13 +439,60 @@ export default function AdminClientsPage() {
                     <Button onClick={() => setDetailDialogOpen(false)}>Kapat</Button>
                     {selectedClient && (
                         <Button
-                            onClick={toggleClientActive}
+                            onClick={() => toggleClientActive(selectedClient)}
                             variant="contained"
                             color={selectedClient.isActive ? 'error' : 'success'}
                         >
                             {selectedClient.isActive ? 'Pasif Yap' : 'Aktif Yap'}
                         </Button>
                     )}
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Dialog */}
+            <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Danışan Düzenle</DialogTitle>
+                <DialogContent>
+                    <Box display="flex" flexDirection="column" gap={2} mt={1}>
+                        <TextField
+                            label="Ad"
+                            fullWidth
+                            value={editForm.firstName}
+                            onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                        />
+                        <TextField
+                            label="Soyad"
+                            fullWidth
+                            value={editForm.lastName}
+                            onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                        />
+                        <FormControl fullWidth>
+                            <InputLabel>Cinsiyet</InputLabel>
+                            <Select
+                                value={editForm.gender}
+                                label="Cinsiyet"
+                                onChange={(e) => setEditForm({ ...editForm, gender: Number(e.target.value) })}
+                            >
+                                {genderOptions.map(opt => (
+                                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <TextField
+                            label="Doğum Tarihi"
+                            type="date"
+                            fullWidth
+                            InputLabelProps={{ shrink: true }}
+                            value={editForm.birthDate}
+                            onChange={(e) => setEditForm({ ...editForm, birthDate: e.target.value })}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditDialogOpen(false)}>İptal</Button>
+                    <Button onClick={handleSaveEdit} variant="contained" disabled={saving}>
+                        {saving ? 'Kaydediliyor...' : 'Kaydet'}
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Container>
