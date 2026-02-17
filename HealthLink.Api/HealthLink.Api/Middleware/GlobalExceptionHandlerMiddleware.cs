@@ -1,4 +1,5 @@
 using HealthLink.Api.Common;
+using HealthLink.Api.Common.Errors;
 using System.Net;
 using System.Text.Json;
 
@@ -26,6 +27,11 @@ public class GlobalExceptionHandlerMiddleware
             _logger.LogWarning(ex, "Business exception: {ErrorCode}", ex.ErrorCode);
             await HandleBusinessExceptionAsync(context, ex);
         }
+        catch (DailyException ex)
+        {
+            _logger.LogError(ex, "Daily.co API error: {StatusCode} — {Body}", ex.StatusCode, ex.DailyErrorBody);
+            await HandleDailyExceptionAsync(context, ex);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occurred");
@@ -48,6 +54,41 @@ public class GlobalExceptionHandlerMiddleware
         return context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }
 
+    private static Task HandleDailyExceptionAsync(HttpContext context, DailyException exception)
+    {
+        context.Response.ContentType = "application/json";
+
+        // Map Daily.co status codes to meaningful client responses
+        var (statusCode, errorCode, message) = exception.StatusCode switch
+        {
+            HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
+                => (500, "VIDEO_CONFIG_ERROR",
+                    "Video servisi yapılandırma hatası. Lütfen yönetici ile iletişime geçin."),
+
+            HttpStatusCode.TooManyRequests
+                => (429, "VIDEO_SERVICE_BUSY",
+                    "Video servisi şu an çok yoğun. Lütfen 30 saniye sonra tekrar deneyin."),
+
+            HttpStatusCode.NotFound
+                => (404, "VIDEO_ROOM_NOT_FOUND",
+                    "Video odası bulunamadı veya süresi dolmuş."),
+
+            _ => (502, "VIDEO_SERVICE_ERROR",
+                  "Video servisi ile iletişimde hata oluştu. Lütfen tekrar deneyin.")
+        };
+
+        context.Response.StatusCode = statusCode;
+
+        var response = new
+        {
+            errorCode,
+            fallbackMessage = message,
+            timestamp = DateTime.UtcNow
+        };
+
+        return context.Response.WriteAsync(JsonSerializer.Serialize(response));
+    }
+
     private static Task HandleUnhandledExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
@@ -57,6 +98,9 @@ public class GlobalExceptionHandlerMiddleware
         {
             errorCode = "INTERNAL_SERVER_ERROR",
             fallbackMessage = "An unexpected error occurred. Please try again later.",
+            // Include details in development for debugging
+            detail = exception.Message,
+            innerDetail = exception.InnerException?.Message,
             timestamp = DateTime.UtcNow
         };
 

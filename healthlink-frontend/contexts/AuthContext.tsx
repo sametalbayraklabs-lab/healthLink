@@ -8,7 +8,7 @@ import type { LoginRequest, LoginResponse, RegisterClientRequest, RegisterExpert
 interface AuthContextType {
     user: UserInfo | null;
     isLoading: boolean;
-    login: (credentials: LoginRequest) => Promise<void>;
+    login: (credentials: LoginRequest, redirectTo?: string) => Promise<void>;
     registerClient: (data: RegisterClientRequest) => Promise<void>;
     registerExpert: (data: RegisterExpertRequest) => Promise<void>;
     logout: () => void;
@@ -23,24 +23,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
+    // Check if a JWT token is expired
+    const isTokenExpired = (token: string): boolean => {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const exp = payload.exp * 1000; // Convert to ms
+            return Date.now() >= exp;
+        } catch {
+            return true; // If we can't parse it, treat as expired
+        }
+    };
+
     useEffect(() => {
         // Check for existing token on mount
         const token = localStorage.getItem('accessToken');
         const savedUser = localStorage.getItem('user');
 
         if (token && savedUser) {
-            try {
-                setUser(JSON.parse(savedUser));
-            } catch (error) {
-                console.error('Failed to parse user data:', error);
+            // Validate token expiry
+            if (isTokenExpired(token)) {
+                console.log('Token expired, clearing session');
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('user');
+            } else {
+                try {
+                    setUser(JSON.parse(savedUser));
+                } catch (error) {
+                    console.error('Failed to parse user data:', error);
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('user');
+                }
             }
         }
         setIsLoading(false);
     }, []);
 
-    const login = async (credentials: LoginRequest) => {
+    const login = async (credentials: LoginRequest, redirectTo?: string) => {
         try {
             const response = await api.post<LoginResponse>('/api/auth/login', credentials);
             const { accessToken, user: userData } = response.data;
@@ -49,13 +67,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
 
-            // Redirect based on role
+            // If redirectTo is provided, use that
+            if (redirectTo) {
+                router.push(redirectTo);
+                return;
+            }
+
+            // Default: Redirect based on role
             if (userData.roles.includes('Admin')) {
                 router.push('/admin/dashboard');
             } else if (userData.roles.includes('Expert')) {
                 router.push('/expert/dashboard');
             } else if (userData.roles.includes('Client')) {
-                router.push('/client/dashboard');
+                router.push('/');
             } else {
                 router.push('/');
             }

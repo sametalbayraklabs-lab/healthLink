@@ -58,7 +58,7 @@ interface AppointmentDetail extends Appointment {
     expertEmail: string;
     clientPackageId: number | null;
     packageName: string | null;
-    zoomLink: string | null;
+    meetingUrl: string | null;
     updatedAt: string | null;
 }
 
@@ -146,6 +146,16 @@ export default function AdminAppointmentsPage() {
     };
 
     const getStatusLabel = (status: string) => {
+        /*
+            Backend enum:
+            Scheduled = 1,
+            Completed = 2,
+            CancelledByClient = 3,
+            CancelledByExpert = 4,
+            NoShow = 5,
+            Incomplete = 6,
+            InProgress = 7
+        */
         switch (status) {
             case 'Scheduled': return 'Planlandı';
             case 'Completed': return 'Tamamlandı';
@@ -153,6 +163,7 @@ export default function AdminAppointmentsPage() {
             case 'CancelledByExpert': return 'Uzman İptal';
             case 'NoShow': return 'Katılmadı';
             case 'Incomplete': return 'Tamamlanmadı';
+            case 'InProgress': return 'Görüşme Sürüyor';
             default: return status;
         }
     };
@@ -165,6 +176,7 @@ export default function AdminAppointmentsPage() {
             case 'CancelledByExpert': return 'error';
             case 'NoShow': return 'warning';
             case 'Incomplete': return 'default';
+            case 'InProgress': return 'success'; // or warning to show activity
             default: return 'default';
         }
     };
@@ -396,13 +408,13 @@ export default function AdminAppointmentsPage() {
                                         <Typography variant="body1">{selectedAppointment.packageName}</Typography>
                                     </Grid>
                                 )}
-                                {selectedAppointment.zoomLink && (
+                                {selectedAppointment.meetingUrl && (
                                     <Grid item xs={12}>
-                                        <Typography variant="subtitle2" color="text.secondary">Zoom Linki</Typography>
+                                        <Typography variant="subtitle2" color="text.secondary">Video Görüşme Linki</Typography>
                                         <Box display="flex" alignItems="center" gap={1}>
                                             <VideocamIcon color="primary" />
-                                            <Link href={selectedAppointment.zoomLink} target="_blank" rel="noopener">
-                                                {selectedAppointment.zoomLink}
+                                            <Link href={selectedAppointment.meetingUrl} target="_blank" rel="noopener">
+                                                {selectedAppointment.meetingUrl}
                                             </Link>
                                         </Box>
                                     </Grid>

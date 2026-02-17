@@ -32,4 +32,8 @@ public static class ErrorCodes
     public const string SPECIALIZATION_NOT_FOUND = "specialization.not_found";
     public const string INVALID_SPECIALIZATION_IDS = "specialization.invalid_ids";
 
+    // Messaging error codes
+    public const string CONVERSATION_NOT_FOUND = "messaging.conversation_not_found";
+    public const string UNAUTHORIZED = "auth.unauthorized";
+
 }

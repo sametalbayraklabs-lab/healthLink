@@ -19,9 +19,11 @@ import {
     Rating,
     Badge,
 } from '@mui/material';
-import { LocalizationProvider, DateCalendar } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
+import 'dayjs/locale/tr';
+import TurkishDateCalendar from '@/app/shared/TurkishDateCalendar';
+
+dayjs.locale('tr');
 import { Availability, TimeSlot } from '@/types/expert';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
@@ -33,6 +35,15 @@ const getExpertTypeLabel = (type: string) => {
         case 'Psychologist': return 'Psikolog';
         case 'SportsCoach': return 'Spor Koçu';
         default: return type;
+    }
+};
+
+const getServiceType = (expertType: string) => {
+    switch (expertType) {
+        case 'Dietitian': return 'NutritionSession';
+        case 'Psychologist': return 'TherapySession';
+        case 'SportsCoach': return 'TrainingSession';
+        default: return 'TherapySession';
     }
 };
 
@@ -54,6 +65,7 @@ interface ExpertListItem {
     averageRating?: number;
     totalReviewCount: number;
     specializations: string[];
+    profileDescription?: string;
 }
 
 interface Specialization {
@@ -86,11 +98,6 @@ export default function NewAppointmentPage() {
             const params = new URLSearchParams();
             if (expertType) params.append('expertType', expertType);
 
-            // Add specialization IDs to params
-            selectedSpecializations.forEach(spec => {
-                params.append('specializationId', spec.id.toString());
-            });
-
             const response = await fetch(`${API_URL}/api/experts?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -116,7 +123,12 @@ export default function NewAppointmentPage() {
 
             if (response.ok) {
                 const data = await response.json();
-                setMyPackages(data.filter((pkg: any) => pkg.status === 'Active'));
+                const activePackages = data.filter((pkg: any) => pkg.status === 'Active' && (pkg.totalSessions - pkg.usedSessions) > 0);
+                setMyPackages(activePackages);
+                // Auto-select if only 1 active package
+                if (activePackages.length === 1) {
+                    setSelectedPackage(activePackages[0].id);
+                }
             }
         } catch (error) {
             console.error('Error fetching packages:', error);
@@ -149,7 +161,10 @@ export default function NewAppointmentPage() {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('[NewAppointment] Availability API response:', JSON.stringify(data));
                 setAvailability(data);
+            } else {
+                console.error('[NewAppointment] API error:', response.status, await response.text());
             }
         } catch (error) {
             console.error('Error fetching availability:', error);
@@ -163,8 +178,8 @@ export default function NewAppointmentPage() {
         }
 
         try {
-            const startDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.startTime}`).toISOString();
-            const endDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.endTime}`).toISOString();
+            const startDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.startTime}`).format('YYYY-MM-DDTHH:mm:ss');
+            const endDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.endTime}`).format('YYYY-MM-DDTHH:mm:ss');
 
             const response = await fetch(`${API_URL}/api/appointments/${selectedPackage}/create`, {
                 method: 'POST',
@@ -175,7 +190,7 @@ export default function NewAppointmentPage() {
                 body: JSON.stringify({
                     expertId: selectedExpert.id,
                     clientPackageId: selectedPackage,
-                    serviceType: 'Online',
+                    serviceType: getServiceType(selectedExpert.expertType),
                     startDateTime,
                     endDateTime,
                 }),
@@ -297,9 +312,10 @@ export default function NewAppointmentPage() {
 
                                     {/* Bio/Description */}
                                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2, minHeight: 60 }}>
-                                        {expert.specializations && expert.specializations.length > 0
-                                            ? `Uzmanlık: ${expert.specializations.join(', ')}`
-                                            : 'Deneyimli uzman. Randevu alarak detaylı bilgi alabilirsiniz.'}
+                                        {expert.profileDescription
+                                            || (expert.specializations && expert.specializations.length > 0
+                                                ? `Uzmanlık: ${expert.specializations.join(', ')}`
+                                                : 'Deneyimli uzman. Randevu alarak detaylı bilgi alabilirsiniz.')}
                                     </Typography>
 
                                     {/* Specializations */}
@@ -398,12 +414,12 @@ export default function NewAppointmentPage() {
                         </Card>
                     </Grid>
 
-                    {/* Calendar + Time Slots */}
-                    <Grid item xs={12} md={8}>
+                    {/* Calendar */}
+                    <Grid item xs={12} md={4}>
                         <Paper sx={{ p: 3 }}>
                             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                                 <Typography variant="h6">
-                                    Tarih ve Saat Seçin
+                                    Tarih Seçin
                                 </Typography>
                                 <Button
                                     variant="outlined"
@@ -413,40 +429,77 @@ export default function NewAppointmentPage() {
                                     Geri
                                 </Button>
                             </Box>
+                            <TurkishDateCalendar
+                                value={selectedDate}
+                                onChange={handleDateChange}
+                                minDate={dayjs()}
+                            />
+                        </Paper>
+                    </Grid>
 
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DateCalendar
-                                    value={selectedDate}
-                                    onChange={handleDateChange}
-                                    minDate={dayjs()}
-                                />
-                            </LocalizationProvider>
+                    {/* Time Slots */}
+                    <Grid item xs={12} md={4}>
+                        <Paper sx={{ p: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Saat Seçin
+                            </Typography>
 
-                            {selectedDate && availability && (
-                                <Box mt={3}>
-                                    <Typography variant="subtitle1" gutterBottom>
-                                        Müsait Saatler ({selectedDate.format('DD MMMM YYYY')}):
+                            {!selectedDate ? (
+                                <Typography color="text.secondary">
+                                    Lütfen önce bir tarih seçin.
+                                </Typography>
+                            ) : !availability ? (
+                                <Typography color="text.secondary">
+                                    Yükleniyor...
+                                </Typography>
+                            ) : availability.availableSlots.length === 0 ? (
+                                <Typography color="text.secondary">
+                                    Bu tarihte müsait saat bulunmamaktadır.
+                                </Typography>
+                            ) : (
+                                <>
+                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                        {selectedDate.format('DD MMMM YYYY')} — {availability.availableSlots.length} müsait saat
                                     </Typography>
-
-                                    {availability.availableSlots.length === 0 ? (
-                                        <Typography color="text.secondary">
-                                            Bu tarihte müsait saat bulunmamaktadır.
-                                        </Typography>
-                                    ) : (
-                                        <Grid container spacing={1}>
-                                            {availability.availableSlots.map((slot, index) => (
-                                                <Grid item key={index}>
-                                                    <Button
-                                                        variant={selectedSlot === slot ? 'contained' : 'outlined'}
-                                                        onClick={() => setSelectedSlot(slot)}
-                                                    >
-                                                        {slot.startTime} - {slot.endTime}
-                                                    </Button>
-                                                </Grid>
-                                            ))}
-                                        </Grid>
-                                    )}
-                                </Box>
+                                    <Box sx={{
+                                        display: 'grid',
+                                        gridTemplateColumns: {
+                                            xs: 'repeat(2, 1fr)',
+                                            sm: 'repeat(3, 1fr)',
+                                            md: 'repeat(4, 1fr)'
+                                        },
+                                        gap: 1
+                                    }}>
+                                        {availability.availableSlots.map((slot, index) => (
+                                            <Box
+                                                key={index}
+                                                onClick={() => setSelectedSlot(slot)}
+                                                sx={{
+                                                    border: '2px solid',
+                                                    borderColor: selectedSlot === slot ? 'primary.main' : 'divider',
+                                                    borderRadius: 2,
+                                                    p: 1.5,
+                                                    textAlign: 'center',
+                                                    cursor: 'pointer',
+                                                    bgcolor: selectedSlot === slot ? 'primary.main' : 'transparent',
+                                                    color: selectedSlot === slot ? 'white' : 'text.primary',
+                                                    transition: 'all 0.2s ease',
+                                                    '&:hover': {
+                                                        borderColor: 'primary.main',
+                                                        bgcolor: selectedSlot === slot ? 'primary.dark' : 'primary.50',
+                                                    }
+                                                }}
+                                            >
+                                                <Typography variant="subtitle2" fontWeight="bold">
+                                                    {slot.startTime}
+                                                </Typography>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    — {slot.endTime}
+                                                </Typography>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                </>
                             )}
 
                             {selectedSlot && myPackages.length > 0 && (
@@ -464,6 +517,21 @@ export default function NewAppointmentPage() {
                                             </MenuItem>
                                         ))}
                                     </TextField>
+                                </Box>
+                            )}
+
+                            {selectedSlot && myPackages.length === 0 && (
+                                <Box mt={3} textAlign="center">
+                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                        Randevu almak için aktif bir paketiniz olmalıdır.
+                                    </Typography>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        href="/client/packages"
+                                    >
+                                        Paket Satın Al
+                                    </Button>
                                 </Box>
                             )}
 

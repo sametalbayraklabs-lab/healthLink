@@ -5,6 +5,7 @@ public class ReviewDto
     public long Id { get; set; }
     public long AppointmentId { get; set; }
     public long ClientId { get; set; }
+    public string? ClientName { get; set; }
     public long ExpertId { get; set; }
     public int Rating { get; set; }
     public string? Comment { get; set; }

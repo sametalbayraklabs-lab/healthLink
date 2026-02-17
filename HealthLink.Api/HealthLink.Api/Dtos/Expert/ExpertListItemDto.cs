@@ -17,5 +17,6 @@ public class ExpertListItemDto
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<string> Specializations { get; set; } = new(); // Just names
+    public string? ProfileDescription { get; set; }
 }
 

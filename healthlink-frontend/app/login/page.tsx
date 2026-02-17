@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     Box,
@@ -13,10 +13,12 @@ import {
     Link as MuiLink,
 } from '@mui/material';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const returnTo = searchParams.get('returnTo');
     const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -29,7 +31,7 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            await login({ email, password });
+            await login({ email, password }, returnTo || undefined);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
         } finally {
@@ -116,5 +118,13 @@ export default function LoginPage() {
                 </Paper>
             </Container>
         </Box>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Yükleniyor...</Box>}>
+            <LoginForm />
+        </Suspense>
     );
 }

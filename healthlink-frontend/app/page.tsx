@@ -8,7 +8,10 @@ import PsychologyIcon from '@mui/icons-material/Psychology';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import StarIcon from '@mui/icons-material/Star';
 import WorkIcon from '@mui/icons-material/Work';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import PersonIcon from '@mui/icons-material/Person';
 import Navbar from '@/components/Navbar';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Expert {
   id: number;
@@ -18,6 +21,7 @@ interface Expert {
   averageRating?: number;
   experienceYears?: number;
   city?: string;
+  profileDescription?: string;
 }
 
 interface Specialization {
@@ -28,6 +32,15 @@ interface Specialization {
 
 export default function Home() {
   const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
+
+  const getDashboardPath = () => {
+    if (!user) return '/login';
+    if (user.roles.includes('Admin')) return '/admin/dashboard';
+    if (user.roles.includes('Expert')) return '/expert/dashboard';
+    if (user.roles.includes('Client')) return '/client/dashboard';
+    return '/';
+  };
   const [experts, setExperts] = useState<Expert[]>([]);
   const [specializations, setSpecializations] = useState<Specialization[]>([]);
   const [selectedExpertType, setSelectedExpertType] = useState<string>('All');
@@ -105,6 +118,14 @@ export default function Home() {
     return found ? found.label : type;
   };
 
+  const handleAppointmentClick = (expertId: number) => {
+    if (isAuthenticated) {
+      router.push(`/client/appointments/new?expertId=${expertId}`);
+    } else {
+      router.push(`/login?returnTo=${encodeURIComponent(`/client/appointments/new?expertId=${expertId}`)}`);
+    }
+  };
+
   return (
     <Box>
       {/* Navigation Bar */}
@@ -149,20 +170,37 @@ export default function Home() {
               >
                 Uzmanları Keşfet
               </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => router.push('/register/client')}
-                sx={{
-                  borderColor: 'white',
-                  color: 'white',
-                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
-                  px: 4,
-                  py: 1.5,
-                }}
-              >
-                Hemen Başla
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => router.push(getDashboardPath())}
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                    px: 4,
+                    py: 1.5,
+                  }}
+                >
+                  Dashboard'a Git
+                </Button>
+              ) : (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => router.push('/register/client')}
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                    px: 4,
+                    py: 1.5,
+                  }}
+                >
+                  Hemen Başla
+                </Button>
+              )}
             </Stack>
           </Box>
         </Container>
@@ -383,13 +421,30 @@ export default function Home() {
                       )}
                     </Stack>
 
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      onClick={() => router.push(`/experts/${expert.id}`)}
-                    >
-                      Profili Görüntüle
-                    </Button>
+                    {/* Short Description */}
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2, minHeight: 40, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {expert.profileDescription || 'Deneyimli uzman. Detaylı bilgi için profili ziyaret edin.'}
+                    </Typography>
+
+                    {/* Dual Buttons */}
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        variant="outlined"
+                        startIcon={<PersonIcon />}
+                        sx={{ flex: 1 }}
+                        onClick={() => router.push(`/experts/${expert.id}`)}
+                      >
+                        Profil
+                      </Button>
+                      <Button
+                        variant="contained"
+                        startIcon={<CalendarMonthIcon />}
+                        sx={{ flex: 1 }}
+                        onClick={() => handleAppointmentClick(expert.id)}
+                      >
+                        Randevu Al
+                      </Button>
+                    </Stack>
                   </CardContent>
                 </Card>
               ))}
@@ -399,46 +454,48 @@ export default function Home() {
       </Box>
 
       {/* CTA Section */}
-      <Box sx={{ bgcolor: 'primary.main', color: 'white', py: 8 }}>
-        <Container maxWidth="md">
-          <Box textAlign="center">
-            <Typography variant="h3" gutterBottom fontWeight={600}>
-              Sağlıklı Yaşam Yolculuğunuza Başlamaya Hazır mısınız?
-            </Typography>
-            <Typography variant="body1" paragraph sx={{ opacity: 0.9, mb: 4 }}>
-              Binlerce kişi uzman diyetisyenlerimizle hedeflerine ulaştı. Sıra sizde!
-            </Typography>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ justifyContent: 'center' }}>
-              <Button
-                variant="contained"
-                size="large"
-                onClick={() => router.push('/register/client')}
-                sx={{
-                  bgcolor: 'white',
-                  color: 'primary.main',
-                  '&:hover': { bgcolor: 'grey.100' },
-                  px: 4
-                }}
-              >
-                Danışan Olarak Kayıt Ol
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => router.push('/register/expert')}
-                sx={{
-                  borderColor: 'white',
-                  color: 'white',
-                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
-                  px: 4
-                }}
-              >
-                Uzman Olarak Katıl
-              </Button>
-            </Stack>
-          </Box>
-        </Container>
-      </Box>
+      {!isAuthenticated && (
+        <Box sx={{ bgcolor: 'primary.main', color: 'white', py: 8 }}>
+          <Container maxWidth="md">
+            <Box textAlign="center">
+              <Typography variant="h3" gutterBottom fontWeight={600}>
+                Sağlıklı Yaşam Yolculuğunuza Başlamaya Hazır mısınız?
+              </Typography>
+              <Typography variant="body1" paragraph sx={{ opacity: 0.9, mb: 4 }}>
+                Binlerce kişi uzman diyetisyenlerimizle hedeflerine ulaştı. Sıra sizde!
+              </Typography>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ justifyContent: 'center' }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={() => router.push('/register/client')}
+                  sx={{
+                    bgcolor: 'white',
+                    color: 'primary.main',
+                    '&:hover': { bgcolor: 'grey.100' },
+                    px: 4
+                  }}
+                >
+                  Danışan Olarak Kayıt Ol
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => router.push('/register/expert')}
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                    px: 4
+                  }}
+                >
+                  Uzman Olarak Katıl
+                </Button>
+              </Stack>
+            </Box>
+          </Container>
+        </Box>
+      )}
     </Box>
   );
 }

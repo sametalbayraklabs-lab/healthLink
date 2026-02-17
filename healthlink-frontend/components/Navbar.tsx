@@ -2,12 +2,22 @@
 
 import { AppBar, Toolbar, Typography, Button, Box, Container, Stack } from '@mui/material';
 import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import ArticleIcon from '@mui/icons-material/Article';
 
 export default function Navbar() {
     const router = useRouter();
     const pathname = usePathname();
+    const { user, logout } = useAuth();
+
+    const getDashboardPath = () => {
+        if (!user) return '/login';
+        if (user.roles.includes('Admin')) return '/admin/dashboard';
+        if (user.roles.includes('Expert')) return '/expert/dashboard';
+        if (user.roles.includes('Client')) return '/client/dashboard';
+        return '/dashboard';
+    };
 
     const navLinks = [
         { label: 'Tarifler', icon: <RestaurantMenuIcon />, path: '/recipes' },
@@ -66,31 +76,62 @@ export default function Navbar() {
 
                     {/* Right Auth Buttons */}
                     <Stack direction="row" spacing={2}>
-                        <Button
-                            variant="text"
-                            onClick={() => router.push('/login')}
-                            sx={{
-                                color: 'text.primary',
-                                textTransform: 'none',
-                                fontWeight: 500
-                            }}
-                        >
-                            Giriş Yap
-                        </Button>
-                        <Button
-                            variant="contained"
-                            onClick={() => router.push('/register/client')}
-                            sx={{
-                                textTransform: 'none',
-                                fontWeight: 500,
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                '&:hover': {
-                                    background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                                }
-                            }}
-                        >
-                            Üye Ol
-                        </Button>
+                        {user ? (
+                            <>
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => router.push(getDashboardPath())}
+                                    sx={{
+                                        textTransform: 'none',
+                                        fontWeight: 500
+                                    }}
+                                >
+                                    Dashboard
+                                </Button>
+                                <Button
+                                    variant="text"
+                                    onClick={() => {
+                                        logout();
+                                        router.push('/');
+                                    }}
+                                    sx={{
+                                        color: 'text.primary',
+                                        textTransform: 'none',
+                                        fontWeight: 500
+                                    }}
+                                >
+                                    Çıkış Yap
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button
+                                    variant="text"
+                                    onClick={() => router.push('/login')}
+                                    sx={{
+                                        color: 'text.primary',
+                                        textTransform: 'none',
+                                        fontWeight: 500
+                                    }}
+                                >
+                                    Giriş Yap
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => router.push('/register/client')}
+                                    sx={{
+                                        textTransform: 'none',
+                                        fontWeight: 500,
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        '&:hover': {
+                                            background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                                        }
+                                    }}
+                                >
+                                    Üye Ol
+                                </Button>
+                            </>
+                        )}
                     </Stack>
                 </Toolbar>
             </Container>

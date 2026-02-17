@@ -6,6 +6,7 @@ public class ExpertPublicProfileDto
     public string ExpertType { get; set; } = null!;
     public string? DisplayName { get; set; }
     public string? Bio { get; set; }
+    public string? ProfileDescription { get; set; }
     public string? City { get; set; }
     public string? WorkType { get; set; }
     public DateOnly? ExperienceStartDate { get; set; }

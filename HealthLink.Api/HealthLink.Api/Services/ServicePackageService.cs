@@ -37,6 +37,7 @@ public class ServicePackageService : IServicePackageService
             Description = p.Description,
             ExpertType = p.ExpertType.ToApiString(),
             SessionCount = p.SessionCount,
+            ValidityDays = p.ValidityDays,
             Price = p.Price,
             Currency = p.Currency,
             IsActive = p.IsActive
@@ -63,6 +64,7 @@ public class ServicePackageService : IServicePackageService
             Description = package.Description,
             ExpertType = package.ExpertType.ToApiString(),
             SessionCount = package.SessionCount,
+            ValidityDays = package.ValidityDays,
             Price = package.Price,
             Currency = package.Currency,
             IsActive = package.IsActive
@@ -79,6 +81,7 @@ public class ServicePackageService : IServicePackageService
             Description = request.Description,
             ExpertType = expertType,
             SessionCount = request.SessionCount,
+            ValidityDays = request.ValidityDays,
             Price = request.Price,
             Currency = request.Currency,
             IsActive = true,
@@ -95,6 +98,7 @@ public class ServicePackageService : IServicePackageService
             Description = package.Description,
             ExpertType = package.ExpertType.ToApiString(),
             SessionCount = package.SessionCount,
+            ValidityDays = package.ValidityDays,
             Price = package.Price,
             Currency = package.Currency,
             IsActive = package.IsActive
@@ -118,6 +122,7 @@ public class ServicePackageService : IServicePackageService
         if (request.Description != null) package.Description = request.Description;
         if (request.ExpertType != null) package.ExpertType = EnumExtensions.ParseExpertType(request.ExpertType);
         if (request.SessionCount.HasValue) package.SessionCount = request.SessionCount.Value;
+        if (request.ValidityDays.HasValue) package.ValidityDays = request.ValidityDays.Value;
         if (request.Price.HasValue) package.Price = request.Price.Value;
         if (request.Currency != null) package.Currency = request.Currency;
         if (request.IsActive.HasValue) package.IsActive = request.IsActive.Value;
@@ -133,6 +138,7 @@ public class ServicePackageService : IServicePackageService
             Description = package.Description,
             ExpertType = package.ExpertType.ToApiString(),
             SessionCount = package.SessionCount,
+            ValidityDays = package.ValidityDays,
             Price = package.Price,
             Currency = package.Currency,
             IsActive = package.IsActive

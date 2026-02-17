@@ -23,6 +23,12 @@ public class AppointmentService : IAppointmentService
         long clientUserId,
         CreateAppointmentRequest request)
     {
+        // Normalize DateTimes - PostgreSQL timestamptz requires UTC kind
+        // Frontend sends local wall-clock time without timezone suffix (Kind=Unspecified)
+        if (request.StartDateTime.Kind == DateTimeKind.Unspecified)
+            request.StartDateTime = DateTime.SpecifyKind(request.StartDateTime, DateTimeKind.Utc);
+        if (request.EndDateTime.Kind == DateTimeKind.Unspecified)
+            request.EndDateTime = DateTime.SpecifyKind(request.EndDateTime, DateTimeKind.Utc);
         // 1. Client
         var client = await _db.Clients
             .FirstOrDefaultAsync(x => x.UserId == clientUserId);
@@ -55,6 +61,12 @@ public class AppointmentService : IAppointmentService
             throw new BusinessException(
                 ErrorCodes.ClientPackageNotActive,
                 "Client package is not active.");
+
+        // Check remaining sessions
+        if (package.UsedSessions >= package.TotalSessions)
+            throw new BusinessException(
+                ErrorCodes.ClientPackageRequired,
+                "Bu pakette kalan seans hakkınız bulunmamaktadır.");
 
         // 4. Client takvim overlap
         var clientOverlap = await _db.Appointments.AnyAsync(x =>
@@ -198,6 +210,7 @@ public class AppointmentService : IAppointmentService
             throw new BusinessException(ErrorCodes.ClientPackageRequired, "Client not found.");
 
         return await _db.Appointments
+            .Include(x => x.Expert)
             .Where(x => x.ClientId == client.Id)
             .OrderByDescending(x => x.StartDateTime)
             .Select(x => new AppointmentResponse
@@ -205,10 +218,15 @@ public class AppointmentService : IAppointmentService
                 Id = x.Id,
                 ClientId = x.ClientId,
                 ExpertId = x.ExpertId,
+                ExpertName = x.Expert.DisplayName,
+                ExpertTitle = x.Expert.ExpertType.ToApiString(),
                 ServiceType = x.ServiceType.ToApiString(),
                 Status = x.Status.ToApiString(),
                 StartDateTime = x.StartDateTime,
-                EndDateTime = x.EndDateTime
+                EndDateTime = x.EndDateTime,
+                MeetingUrl = x.MeetingUrl,
+                HasReview = _db.Reviews.Any(r => r.AppointmentId == x.Id),
+                ReviewId = _db.Reviews.Where(r => r.AppointmentId == x.Id).Select(r => (long?)r.Id).FirstOrDefault()
             })
             .ToListAsync();
     }
@@ -219,20 +237,75 @@ public class AppointmentService : IAppointmentService
         if (expert == null)
             throw new BusinessException(ErrorCodes.ClientPackageRequired, "Expert not found.");
 
-        return await _db.Appointments
+        var rawAppointments = await _db.Appointments
+            .Include(x => x.Client)
             .Where(x => x.ExpertId == expert.Id)
             .OrderByDescending(x => x.StartDateTime)
-            .Select(x => new AppointmentResponse
+            .ToListAsync();
+
+        return rawAppointments.Select(x => new AppointmentResponse
+        {
+            Id = x.Id,
+            ClientId = x.ClientId,
+            ExpertId = x.ExpertId,
+            ClientName = $"{x.Client.FirstName} {x.Client.LastName}",
+            ServiceType = x.ServiceType.ToApiString(),
+            Status = x.Status.ToApiString(),
+            StartDateTime = x.StartDateTime,
+            EndDateTime = x.EndDateTime
+        }).ToList();
+    }
+
+    public async Task<IReadOnlyList<MyExpertDto>> GetMyExpertsAsync(long clientUserId)
+    {
+        var client = await _db.Clients.FirstOrDefaultAsync(c => c.UserId == clientUserId);
+        if (client == null)
+            throw new BusinessException(ErrorCodes.ClientPackageRequired, "Client not found.");
+
+        var favoriteExpertIds = await _db.FavoriteExperts
+            .Where(f => f.ClientId == client.Id)
+            .Select(f => f.ExpertId)
+            .ToListAsync();
+
+        var myExperts = await _db.Appointments
+            .Include(x => x.Expert)
+            .Where(x => x.ClientId == client.Id && x.Status == Entities.Enums.AppointmentStatus.Completed)
+            .GroupBy(x => x.ExpertId)
+            .Select(g => new MyExpertDto
             {
-                Id = x.Id,
-                ClientId = x.ClientId,
-                ExpertId = x.ExpertId,
-                ServiceType = x.ServiceType.ToApiString(),
-                Status = x.Status.ToApiString(),
-                StartDateTime = x.StartDateTime,
-                EndDateTime = x.EndDateTime
+                ExpertId = g.Key,
+                DisplayName = g.First().Expert.DisplayName,
+                ExpertType = g.First().Expert.ExpertType.ToApiString(),
+                ProfilePhotoUrl = g.First().Expert.ProfilePhotoUrl,
+                AverageRating = g.First().Expert.AverageRating,
+                TotalReviewCount = g.First().Expert.TotalReviewCount,
+                TotalSessions = g.Count(),
+                LastSessionDate = g.Max(a => a.StartDateTime),
+                IsFavorite = favoriteExpertIds.Contains(g.Key)
+            })
+            .OrderByDescending(x => x.LastSessionDate)
+            .ToListAsync();
+
+        // Also include favorite experts that don't have completed appointments
+        var expertIdsInList = myExperts.Select(e => e.ExpertId).ToHashSet();
+        var favOnlyExperts = await _db.FavoriteExperts
+            .Include(f => f.Expert)
+            .Where(f => f.ClientId == client.Id && !expertIdsInList.Contains(f.ExpertId))
+            .Select(f => new MyExpertDto
+            {
+                ExpertId = f.ExpertId,
+                DisplayName = f.Expert.DisplayName,
+                ExpertType = f.Expert.ExpertType.ToApiString(),
+                ProfilePhotoUrl = f.Expert.ProfilePhotoUrl,
+                AverageRating = f.Expert.AverageRating,
+                TotalReviewCount = f.Expert.TotalReviewCount,
+                TotalSessions = 0,
+                LastSessionDate = DateTime.MinValue,
+                IsFavorite = true
             })
             .ToListAsync();
+
+        return myExperts.Concat(favOnlyExperts).ToList();
     }
 
 }

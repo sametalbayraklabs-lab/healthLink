@@ -18,7 +18,7 @@ import {
     ListItemIcon,
     ListItemText,
 } from '@mui/material';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
@@ -38,6 +38,10 @@ interface PackageDetails {
 export default function PackageDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const returnTo = searchParams.get('returnTo');
+    const dateParam = searchParams.get('date');
+    const slotParam = searchParams.get('slot');
     const [packageData, setPackageData] = useState<PackageDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [purchasing, setPurchasing] = useState(false);
@@ -60,14 +64,31 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
     const handlePurchase = async () => {
         setPurchasing(true);
         try {
-            // Create a client package purchase
-            await api.post('/api/client-packages/purchase', {
+            // Create client package + payment, get Iyzico checkout form
+            const response = await api.post('/api/client-packages/purchase', {
                 servicePackageId: packageData?.id,
             });
 
-            // Show success and redirect
-            alert('Paket başarıyla satın alındı!');
-            router.push('/client/my-packages');
+            const { paymentId, checkoutFormContent, paymentToken } = response.data;
+
+            if (checkoutFormContent) {
+                // Store checkout form content and redirect to checkout page
+                sessionStorage.setItem('iyzicoCheckoutForm', checkoutFormContent);
+                sessionStorage.setItem('iyzicoPaymentId', paymentId.toString());
+                sessionStorage.setItem('iyzicoPaymentToken', paymentToken || '');
+
+                // Store return info for after payment
+                if (returnTo) {
+                    const params = new URLSearchParams();
+                    if (dateParam) params.set('date', dateParam);
+                    if (slotParam) params.set('slot', slotParam);
+                    sessionStorage.setItem('iyzicoReturnTo', `${returnTo}${params.toString() ? '?' + params.toString() : ''}`);
+                }
+
+                router.push(`/client/payments/${paymentId}/checkout`);
+            } else {
+                alert('Ödeme formu oluşturulamadı. Lütfen tekrar deneyin.');
+            }
         } catch (error: any) {
             console.error('Failed to purchase package:', error);
             alert(error.response?.data?.message || 'Paket satın alınırken bir hata oluştu');

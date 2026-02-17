@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState, useCallback } from 'react';
 import {
     Container,
     Typography,
@@ -17,18 +17,95 @@ import {
     Paper,
     TextField,
     MenuItem,
+    Stack,
 } from '@mui/material';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import WorkIcon from '@mui/icons-material/Work';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import StarIcon from '@mui/icons-material/Star';
-import { LocalizationProvider, DateCalendar } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import MessageIcon from '@mui/icons-material/Message';
 import dayjs, { Dayjs } from 'dayjs';
+import 'dayjs/locale/tr';
+import TurkishDateCalendar from '@/app/shared/TurkishDateCalendar';
+
+dayjs.locale('tr');
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
+
+interface ReviewItem {
+    id: number;
+    rating: number;
+    comment: string | null;
+    createdAt: string;
+    clientId: number;
+}
+
+function ExpertReviews({ expertId }: { expertId: number }) {
+    const [reviews, setReviews] = useState<ReviewItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchReviews = useCallback(async () => {
+        try {
+            const res = await api.get(`/api/reviews/expert/${expertId}`);
+            setReviews(res.data || []);
+        } catch (error) {
+            console.error('Failed to fetch reviews:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [expertId]);
+
+    useEffect(() => {
+        fetchReviews();
+    }, [fetchReviews]);
+
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" py={2}>
+                <CircularProgress size={24} />
+            </Box>
+        );
+    }
+
+    if (reviews.length === 0) {
+        return (
+            <Typography variant="body2" color="text.secondary">
+                Henüz değerlendirme bulunmamaktadır.
+            </Typography>
+        );
+    }
+
+    return (
+        <Stack spacing={2}>
+            {reviews.map((review) => (
+                <Paper key={review.id} variant="outlined" sx={{ p: 2 }}>
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <Rating value={review.rating} readOnly size="small" />
+                        <Typography variant="body2" color="text.secondary">
+                            {new Date(review.createdAt).toLocaleDateString('tr-TR')}
+                        </Typography>
+                    </Box>
+                    {review.comment && (
+                        <Typography variant="body2">
+                            {review.comment}
+                        </Typography>
+                    )}
+                </Paper>
+            ))}
+        </Stack>
+    );
+}
+
+const getServiceType = (expertType: string) => {
+    switch (expertType) {
+        case 'Dietitian': return 'NutritionSession';
+        case 'Psychologist': return 'TherapySession';
+        case 'SportsCoach': return 'TrainingSession';
+        default: return 'TherapySession';
+    }
+};
 
 interface ExpertProfile {
     id: number;
@@ -68,6 +145,8 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
     const [expert, setExpert] = useState<ExpertProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const searchParams = useSearchParams();
+
     // Appointment booking states
     const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
     const [availability, setAvailability] = useState<Availability | null>(null);
@@ -80,6 +159,32 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
         fetchExpert();
         fetchMyPackages();
     }, [resolvedParams.id]);
+
+    // Restore date/slot from query params (after returning from package purchase)
+    useEffect(() => {
+        const dateParam = searchParams.get('date');
+        const slotParam = searchParams.get('slot');
+        if (dateParam) {
+            const restoredDate = dayjs(dateParam);
+            setSelectedDate(restoredDate);
+            handleDateChange(restoredDate).then(() => {
+                if (slotParam) {
+                    // Will be set after availability loads
+                    const checkSlot = setInterval(() => {
+                        setAvailability(prev => {
+                            if (prev && prev.availableSlots.length > 0) {
+                                const matchingSlot = prev.availableSlots.find(s => s.startTime === slotParam);
+                                if (matchingSlot) setSelectedSlot(matchingSlot);
+                                clearInterval(checkSlot);
+                            }
+                            return prev;
+                        });
+                    }, 200);
+                    setTimeout(() => clearInterval(checkSlot), 5000);
+                }
+            });
+        }
+    }, [searchParams]);
 
     const fetchExpert = async () => {
         try {
@@ -102,7 +207,12 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
 
             if (response.ok) {
                 const data = await response.json();
-                setMyPackages(data.filter((pkg: any) => pkg.status === 'Active'));
+                const activePackages = data.filter((pkg: any) => pkg.status === 'Active' && (pkg.totalSessions - pkg.usedSessions) > 0);
+                setMyPackages(activePackages);
+                // Auto-select if only 1 active package
+                if (activePackages.length === 1) {
+                    setSelectedPackage(activePackages[0].id);
+                }
             }
         } catch (error) {
             console.error('Error fetching packages:', error);
@@ -122,7 +232,7 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
                 `${API_URL}/api/experts/${resolvedParams.id}/availability?date=${dateStr}`,
                 {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                     },
                 }
             );
@@ -145,19 +255,19 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
         }
 
         try {
-            const startDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.startTime}`).toISOString();
-            const endDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.endTime}`).toISOString();
+            const startDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.startTime}`).format('YYYY-MM-DDTHH:mm:ss');
+            const endDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.endTime}`).format('YYYY-MM-DDTHH:mm:ss');
 
             const response = await fetch(`${API_URL}/api/appointments/${selectedPackage}/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
                 body: JSON.stringify({
                     expertId: resolvedParams.id,
                     clientPackageId: selectedPackage,
-                    serviceType: 'Online',
+                    serviceType: expert ? getServiceType(expert.expertType) : 'TherapySession',
                     startDateTime,
                     endDateTime,
                 }),
@@ -178,10 +288,6 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
 
     const handleBookAppointment = () => {
         router.push(`/client/appointments/new?expertId=${resolvedParams.id}`);
-    };
-
-    const handleViewPackages = () => {
-        router.push(`/client/packages?expertId=${resolvedParams.id}`);
     };
 
     if (loading) {
@@ -211,7 +317,7 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
             {/* Header Section */}
             <Paper elevation={2} sx={{ p: 4, mb: 3 }}>
                 <Grid container spacing={3}>
-                    <Grid item xs={12} md={8}>
+                    <Grid size={{ xs: 12, md: 8 }}>
                         <Box display="flex" alignItems="center" gap={3}>
                             <Avatar
                                 sx={{
@@ -239,15 +345,16 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
                             </Box>
                         </Box>
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <Box display="flex" flexDirection="column" gap={2} height="100%" justifyContent="center">
                             <Button
-                                variant="outlined"
+                                variant="contained"
                                 size="large"
                                 fullWidth
-                                onClick={handleViewPackages}
+                                startIcon={<MessageIcon />}
+                                onClick={() => router.push(`/client/messages?expertId=${expert.id}`)}
                             >
-                                Paketleri Görüntüle
+                                Mesaj Gönder
                             </Button>
                         </Box>
                     </Grid>
@@ -256,7 +363,7 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
 
             <Grid container spacing={3}>
                 {/* Left Column - Details */}
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     {/* About Section */}
                     <Card sx={{ mb: 3 }}>
                         <CardContent>
@@ -288,7 +395,7 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
                         </CardContent>
                     </Card>
 
-                    {/* Reviews Section - Placeholder */}
+                    {/* Reviews Section */}
                     <Card>
                         <CardContent>
                             <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -306,15 +413,13 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
                                 </Box>
                             </Box>
                             <Divider sx={{ my: 2 }} />
-                            <Typography variant="body2" color="text.secondary">
-                                Değerlendirmeler yakında eklenecek
-                            </Typography>
+                            <ExpertReviews expertId={expert.id} />
                         </CardContent>
                     </Card>
                 </Grid>
 
                 {/* Right Column - Calendar & Appointment Booking */}
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -325,14 +430,12 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
                             </Typography>
 
                             {/* Calendar */}
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DateCalendar
-                                    value={selectedDate}
-                                    onChange={handleDateChange}
-                                    minDate={dayjs()}
-                                    sx={{ width: '100%' }}
-                                />
-                            </LocalizationProvider>
+                            <TurkishDateCalendar
+                                value={selectedDate}
+                                onChange={handleDateChange}
+                                minDate={dayjs()}
+                                sx={{ width: '100%' }}
+                            />
 
                             {/* Time Slots */}
                             {selectedDate && (
@@ -366,36 +469,57 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
                                 </Box>
                             )}
 
-                            {/* Package Selection */}
-                            {selectedSlot && myPackages.length > 0 && (
+                            {/* Package Selection & Booking */}
+                            {selectedSlot && (
                                 <Box mt={2}>
-                                    <TextField
-                                        select
-                                        fullWidth
-                                        size="small"
-                                        label="Paket Seçin"
-                                        value={selectedPackage || ''}
-                                        onChange={(e) => setSelectedPackage(Number(e.target.value))}
-                                    >
-                                        {myPackages.map((pkg: any) => (
-                                            <MenuItem key={pkg.id} value={pkg.id}>
-                                                {pkg.servicePackage.name} ({pkg.totalSessions - pkg.usedSessions} seans)
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
+                                    {myPackages.length > 0 ? (
+                                        <>
+                                            <TextField
+                                                select
+                                                fullWidth
+                                                size="small"
+                                                label="Paket Seçin"
+                                                value={selectedPackage || ''}
+                                                onChange={(e) => setSelectedPackage(Number(e.target.value))}
+                                            >
+                                                {myPackages.map((pkg: any) => (
+                                                    <MenuItem key={pkg.id} value={pkg.id}>
+                                                        {pkg.servicePackage.name} ({pkg.totalSessions - pkg.usedSessions} seans)
+                                                    </MenuItem>
+                                                ))}
+                                            </TextField>
+                                            {selectedPackage && (
+                                                <Button
+                                                    variant="contained"
+                                                    fullWidth
+                                                    sx={{ mt: 2 }}
+                                                    onClick={handleCreateAppointment}
+                                                >
+                                                    Randevu Oluştur
+                                                </Button>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <Box textAlign="center" py={2}>
+                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                Randevu almak için aktif bir paketiniz olmalıdır.
+                                            </Typography>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={() => {
+                                                    const params = new URLSearchParams();
+                                                    params.set('returnTo', `/experts/${resolvedParams.id}`);
+                                                    if (selectedDate) params.set('date', selectedDate.format('YYYY-MM-DD'));
+                                                    if (selectedSlot) params.set('slot', selectedSlot.startTime);
+                                                    router.push(`/client/packages?${params.toString()}`);
+                                                }}
+                                            >
+                                                Paket Satın Al
+                                            </Button>
+                                        </Box>
+                                    )}
                                 </Box>
-                            )}
-
-                            {/* Create Appointment Button */}
-                            {selectedSlot && selectedPackage && (
-                                <Button
-                                    variant="contained"
-                                    fullWidth
-                                    sx={{ mt: 2 }}
-                                    onClick={handleCreateAppointment}
-                                >
-                                    Randevu Oluştur
-                                </Button>
                             )}
                         </CardContent>
                     </Card>

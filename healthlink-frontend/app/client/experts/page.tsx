@@ -18,15 +18,16 @@ import {
     Stack,
     Avatar,
     Rating,
-    Divider,
     InputAdornment,
     CircularProgress,
+    OutlinedInput,
+    Checkbox,
+    ListItemText,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import StarIcon from '@mui/icons-material/Star';
 import WorkIcon from '@mui/icons-material/Work';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -42,6 +43,7 @@ interface Expert {
     workType: string;
     averageRating: number;
     totalReviews: number;
+    totalReviewCount: number;
     experienceStartDate: string;
     specializations: Array<{
         id: number;
@@ -57,6 +59,20 @@ interface Specialization {
     expertType: string;
 }
 
+const workTypeLabels: Record<string, string> = {
+    Online: 'Online',
+    Onsite: 'Yüz Yüze',
+    Hybrid: 'Hibrit',
+    Undefined: '',
+};
+
+const expertTypeLabels: Record<string, string> = {
+    Psychologist: 'Psikolog',
+    Dietitian: 'Diyetisyen',
+    SportsCoach: 'Spor Koçu',
+    All: 'Uzman',
+};
+
 export default function ClientExpertsPage() {
     const router = useRouter();
     const [experts, setExperts] = useState<Expert[]>([]);
@@ -66,7 +82,6 @@ export default function ClientExpertsPage() {
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedExpertType, setSelectedExpertType] = useState('All');
-    const [selectedCity, setSelectedCity] = useState('All');
     const [selectedSpecializations, setSelectedSpecializations] = useState<number[]>([]);
     const [minRating, setMinRating] = useState(0);
     const [sortBy, setSortBy] = useState('rating');
@@ -98,71 +113,55 @@ export default function ClientExpertsPage() {
         { value: 'SportsCoach', label: 'Spor Koçu' },
     ];
 
-    const cities = ['All', 'Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Antalya'];
-
     const getExperienceYears = (startDate: string) => {
-        if (!startDate) return 0;
-        return new Date().getFullYear() - new Date(startDate).getFullYear();
+        if (!startDate) return null;
+        const years = new Date().getFullYear() - new Date(startDate).getFullYear();
+        return years > 0 ? years : null;
     };
+
+    const filteredSpecializations = selectedExpertType !== 'All'
+        ? specializations.filter(s => s.expertType === selectedExpertType)
+        : specializations;
 
     const filteredAndSortedExperts = experts
         .filter((expert) => {
-            // Search filter
-            if (searchQuery && !expert.displayName.toLowerCase().includes(searchQuery.toLowerCase()) &&
-                !expert.specializations.some(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))) {
+            if (searchQuery && !expert.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                !expert.specializations?.some(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))) {
                 return false;
             }
-
-            // Expert type filter
             if (selectedExpertType !== 'All' && expert.expertType !== selectedExpertType) {
                 return false;
             }
-
-            // City filter
-            if (selectedCity !== 'All' && expert.city !== selectedCity) {
-                return false;
-            }
-
-            // Specialization filter
             if (selectedSpecializations.length > 0) {
-                const expertSpecIds = expert.specializations.map(s => s.id);
+                const expertSpecIds = expert.specializations?.map(s => s.id) || [];
                 if (!selectedSpecializations.some(id => expertSpecIds.includes(id))) {
                     return false;
                 }
             }
-
-            // Rating filter
             if ((expert.averageRating || 0) < minRating) {
                 return false;
             }
-
             return true;
         })
         .sort((a, b) => {
             switch (sortBy) {
                 case 'rating':
                     return (b.averageRating || 0) - (a.averageRating || 0);
-                case 'experience':
-                    return getExperienceYears(b.experienceStartDate) - getExperienceYears(a.experienceStartDate);
+                case 'experience': {
+                    const aYears = getExperienceYears(a.experienceStartDate) || 0;
+                    const bYears = getExperienceYears(b.experienceStartDate) || 0;
+                    return bYears - aYears;
+                }
                 case 'reviews':
-                    return (b.totalReviews || 0) - (a.totalReviews || 0);
+                    return (b.totalReviews || b.totalReviewCount || 0) - (a.totalReviews || a.totalReviewCount || 0);
                 default:
                     return 0;
             }
         });
 
-    const handleSpecializationToggle = (specId: number) => {
-        setSelectedSpecializations(prev =>
-            prev.includes(specId)
-                ? prev.filter(id => id !== specId)
-                : [...prev, specId]
-        );
-    };
-
     const clearFilters = () => {
         setSearchQuery('');
         setSelectedExpertType('All');
-        setSelectedCity('All');
         setSelectedSpecializations([]);
         setMinRating(0);
     };
@@ -184,7 +183,7 @@ export default function ClientExpertsPage() {
                 Size en uygun uzmanı bulun ve hemen randevu alın
             </Typography>
 
-            {/* Filters - Horizontal Top Layout */}
+            {/* Filters */}
             <Card sx={{ mb: 3 }}>
                 <CardContent>
                     <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
@@ -199,9 +198,9 @@ export default function ClientExpertsPage() {
                         </Button>
                     </Box>
 
-                    <Grid container spacing={2}>
+                    <Grid container spacing={2} alignItems="center">
                         {/* Search */}
-                        <Grid item xs={12} md={4}>
+                        <Grid item xs={12} md={3}>
                             <TextField
                                 fullWidth
                                 size="small"
@@ -219,13 +218,16 @@ export default function ClientExpertsPage() {
                         </Grid>
 
                         {/* Expert Type */}
-                        <Grid item xs={12} sm={6} md={2}>
+                        <Grid item xs={6} sm={3} md={2}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Uzman Tipi</InputLabel>
                                 <Select
                                     value={selectedExpertType}
                                     label="Uzman Tipi"
-                                    onChange={(e) => setSelectedExpertType(e.target.value)}
+                                    onChange={(e) => {
+                                        setSelectedExpertType(e.target.value);
+                                        setSelectedSpecializations([]);
+                                    }}
                                 >
                                     {expertTypes.map((type) => (
                                         <MenuItem key={type.value} value={type.value}>
@@ -236,18 +238,32 @@ export default function ClientExpertsPage() {
                             </FormControl>
                         </Grid>
 
-                        {/* City */}
-                        <Grid item xs={12} sm={6} md={2}>
+                        {/* Specializations — Multi-Select Dropdown */}
+                        <Grid item xs={6} sm={3} md={2}>
                             <FormControl fullWidth size="small">
-                                <InputLabel>Şehir</InputLabel>
+                                <InputLabel>Uzmanlık Alanları</InputLabel>
                                 <Select
-                                    value={selectedCity}
-                                    label="Şehir"
-                                    onChange={(e) => setSelectedCity(e.target.value)}
+                                    multiple
+                                    value={selectedSpecializations}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSelectedSpecializations(typeof val === 'string' ? [] : val as number[]);
+                                    }}
+                                    input={<OutlinedInput label="Uzmanlık Alanları" />}
+                                    renderValue={(selected) => {
+                                        if (selected.length === 0) return '';
+                                        const names = selected.map(id => {
+                                            const spec = specializations.find(s => s.id === id);
+                                            return spec?.name || '';
+                                        });
+                                        return names.length <= 2 ? names.join(', ') : `${names.length} alan seçili`;
+                                    }}
+                                    MenuProps={{ PaperProps: { style: { maxHeight: 300 } } }}
                                 >
-                                    {cities.map((city) => (
-                                        <MenuItem key={city} value={city}>
-                                            {city === 'All' ? 'Tümü' : city}
+                                    {filteredSpecializations.map((spec) => (
+                                        <MenuItem key={spec.id} value={spec.id}>
+                                            <Checkbox checked={selectedSpecializations.includes(spec.id)} size="small" />
+                                            <ListItemText primary={spec.name} />
                                         </MenuItem>
                                     ))}
                                 </Select>
@@ -255,7 +271,7 @@ export default function ClientExpertsPage() {
                         </Grid>
 
                         {/* Sort By */}
-                        <Grid item xs={12} sm={6} md={2}>
+                        <Grid item xs={6} sm={3} md={2}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Sırala</InputLabel>
                                 <Select
@@ -271,7 +287,7 @@ export default function ClientExpertsPage() {
                         </Grid>
 
                         {/* Minimum Rating */}
-                        <Grid item xs={12} sm={6} md={2}>
+                        <Grid item xs={6} sm={3} md={2}>
                             <Box>
                                 <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
                                     Minimum Puan
@@ -284,30 +300,6 @@ export default function ClientExpertsPage() {
                                 />
                             </Box>
                         </Grid>
-
-                        {/* Specializations */}
-                        {selectedExpertType !== 'All' && (
-                            <Grid item xs={12}>
-                                <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-                                    Uzmanlık Alanları
-                                </Typography>
-                                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-                                    {specializations
-                                        .filter(s => s.expertType === selectedExpertType)
-                                        .map(spec => (
-                                            <Chip
-                                                key={spec.id}
-                                                label={spec.name}
-                                                onClick={() => handleSpecializationToggle(spec.id)}
-                                                color={selectedSpecializations.includes(spec.id) ? 'primary' : 'default'}
-                                                variant={selectedSpecializations.includes(spec.id) ? 'filled' : 'outlined'}
-                                                size="small"
-                                                sx={{ cursor: 'pointer' }}
-                                            />
-                                        ))}
-                                </Stack>
-                            </Grid>
-                        )}
                     </Grid>
                 </CardContent>
             </Card>
@@ -335,107 +327,119 @@ export default function ClientExpertsPage() {
                 </Card>
             ) : (
                 <Stack spacing={2}>
-                    {filteredAndSortedExperts.map((expert) => (
-                        <Card key={expert.id} sx={{ '&:hover': { boxShadow: 4 }, transition: 'box-shadow 0.3s' }}>
-                            <CardContent>
-                                <Grid container spacing={2}>
-                                    <Grid item xs={12} sm={8}>
-                                        <Box display="flex" gap={2}>
-                                            <Avatar
-                                                sx={{
-                                                    width: 80,
-                                                    height: 80,
-                                                    bgcolor: 'primary.main',
-                                                    fontSize: '2rem',
-                                                }}
-                                            >
-                                                {expert.displayName.charAt(0)}
-                                            </Avatar>
-                                            <Box flex={1}>
-                                                <Typography variant="h6" fontWeight={600}>
-                                                    {expert.displayName}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                    {expert.title}
-                                                </Typography>
+                    {filteredAndSortedExperts.map((expert) => {
+                        const expYears = getExperienceYears(expert.experienceStartDate);
+                        const workLabel = workTypeLabels[expert.workType] || expert.workType;
+                        const typeLabel = expertTypeLabels[expert.expertType] || expert.expertType;
 
-                                                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                                                    <Rating value={expert.averageRating || 0} readOnly size="small" precision={0.5} />
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {(expert.averageRating || 0).toFixed(1)} ({expert.totalReviews || 0} değerlendirme)
+                        return (
+                            <Card key={expert.id} sx={{ '&:hover': { boxShadow: 4 }, transition: 'box-shadow 0.3s' }}>
+                                <CardContent>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} sm={8}>
+                                            <Box display="flex" gap={2}>
+                                                <Avatar
+                                                    sx={{
+                                                        width: 80,
+                                                        height: 80,
+                                                        bgcolor: 'primary.main',
+                                                        fontSize: '2rem',
+                                                    }}
+                                                >
+                                                    {expert.displayName?.charAt(0)}
+                                                </Avatar>
+                                                <Box flex={1}>
+                                                    <Typography variant="h6" fontWeight={600}>
+                                                        {expert.displayName}
                                                     </Typography>
+                                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                        {typeLabel}
+                                                    </Typography>
+
+                                                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                                        <Rating value={expert.averageRating || 0} readOnly size="small" precision={0.5} />
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            {(expert.averageRating || 0).toFixed(1)} ({expert.totalReviews || expert.totalReviewCount || 0} değerlendirme)
+                                                        </Typography>
+                                                    </Box>
+
+                                                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={0.5} mb={1}>
+                                                        {expert.city && (
+                                                            <Chip
+                                                                icon={<LocationOnIcon />}
+                                                                label={expert.city}
+                                                                size="small"
+                                                                variant="outlined"
+                                                            />
+                                                        )}
+                                                        {expYears !== null && (
+                                                            <Chip
+                                                                icon={<WorkIcon />}
+                                                                label={`${expYears} yıl deneyim`}
+                                                                size="small"
+                                                                variant="outlined"
+                                                            />
+                                                        )}
+                                                        {workLabel && (
+                                                            <Chip
+                                                                label={workLabel}
+                                                                size="small"
+                                                                color="primary"
+                                                                variant="outlined"
+                                                            />
+                                                        )}
+                                                    </Stack>
+
+                                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                                        {expert.bio ? expert.bio.substring(0, 150) : 'Henüz biyografi eklenmemiş'}
+                                                        {expert.bio && expert.bio.length > 150 && '...'}
+                                                    </Typography>
+
+                                                    <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                                                        {expert.specializations?.slice(0, 3).map((spec) => (
+                                                            <Chip
+                                                                key={spec.id}
+                                                                label={spec.name}
+                                                                size="small"
+                                                                color="secondary"
+                                                            />
+                                                        ))}
+                                                        {expert.specializations?.length > 3 && (
+                                                            <Chip
+                                                                label={`+${expert.specializations.length - 3}`}
+                                                                size="small"
+                                                                variant="outlined"
+                                                            />
+                                                        )}
+                                                    </Stack>
                                                 </Box>
-
-                                                <Stack direction="row" spacing={1} flexWrap="wrap" gap={0.5} mb={1}>
-                                                    <Chip
-                                                        icon={<LocationOnIcon />}
-                                                        label={expert.city}
-                                                        size="small"
-                                                        variant="outlined"
-                                                    />
-                                                    <Chip
-                                                        icon={<WorkIcon />}
-                                                        label={`${getExperienceYears(expert.experienceStartDate)} yıl deneyim`}
-                                                        size="small"
-                                                        variant="outlined"
-                                                    />
-                                                    <Chip
-                                                        label={expert.workType}
-                                                        size="small"
-                                                        color="primary"
-                                                        variant="outlined"
-                                                    />
-                                                </Stack>
-
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                                    {expert.bio ? expert.bio.substring(0, 150) : 'Henüz biyografi eklenmemiş'}
-                                                    {expert.bio && expert.bio.length > 150 && '...'}
-                                                </Typography>
-
-                                                <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
-                                                    {expert.specializations.slice(0, 3).map((spec) => (
-                                                        <Chip
-                                                            key={spec.id}
-                                                            label={spec.name}
-                                                            size="small"
-                                                            color="secondary"
-                                                        />
-                                                    ))}
-                                                    {expert.specializations.length > 3 && (
-                                                        <Chip
-                                                            label={`+${expert.specializations.length - 3}`}
-                                                            size="small"
-                                                            variant="outlined"
-                                                        />
-                                                    )}
-                                                </Stack>
                                             </Box>
-                                        </Box>
-                                    </Grid>
+                                        </Grid>
 
-                                    <Grid item xs={12} sm={4}>
-                                        <Box display="flex" flexDirection="column" gap={1} height="100%" justifyContent="center">
-                                            <Button
-                                                variant="contained"
-                                                fullWidth
-                                                startIcon={<CalendarMonthIcon />}
-                                                onClick={() => router.push(`/client/appointments/new?expertId=${expert.id}`)}
-                                            >
-                                                Randevu Al
-                                            </Button>
-                                            <Button
-                                                variant="outlined"
-                                                fullWidth
-                                                onClick={() => router.push(`/experts/${expert.id}`)}
-                                            >
-                                                Profili Görüntüle
-                                            </Button>
-                                        </Box>
+                                        <Grid item xs={12} sm={4}>
+                                            <Box display="flex" flexDirection="column" gap={1} height="100%" justifyContent="center">
+                                                <Button
+                                                    variant="contained"
+                                                    fullWidth
+                                                    startIcon={<CalendarMonthIcon />}
+                                                    onClick={() => router.push(`/client/appointments/new?expertId=${expert.id}`)}
+                                                >
+                                                    Randevu Al
+                                                </Button>
+                                                <Button
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    onClick={() => router.push(`/experts/${expert.id}`)}
+                                                >
+                                                    Profili Görüntüle
+                                                </Button>
+                                            </Box>
+                                        </Grid>
                                     </Grid>
-                                </Grid>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </Stack>
             )}
         </Container>

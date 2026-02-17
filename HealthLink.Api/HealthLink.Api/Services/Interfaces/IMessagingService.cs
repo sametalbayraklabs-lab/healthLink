@@ -8,4 +8,6 @@ public interface IMessagingService
     Task<List<MessageDto>> GetConversationMessagesAsync(long userId, long conversationId);
     Task<MessageDto> SendMessageAsync(long userId, SendMessageRequest request);
     Task MarkAsReadAsync(long userId, long conversationId);
+    Task<ConversationDto> GetOrCreateConversationAsync(long clientUserId, long expertId);
+    Task<ConversationDto> GetOrCreateConversationForExpertAsync(long expertUserId, long clientId);
 }

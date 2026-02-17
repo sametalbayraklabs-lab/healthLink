@@ -1,0 +1,117 @@
+﻿ M HealthLink.Api/Docs/DocumentsofSolution/TechnicalDebt.md
+ M HealthLink.Api/HealthLink.Api/Common/Errors/ErrorCodes.cs
+ M HealthLink.Api/HealthLink.Api/Common/TimeOnlyJsonConverter.cs
+ M HealthLink.Api/HealthLink.Api/Controllers/AdminAppointmentsController.cs
+ M HealthLink.Api/HealthLink.Api/Controllers/AdminServicePackagesController.cs
+ M HealthLink.Api/HealthLink.Api/Controllers/AppointmentsController.cs
+ M HealthLink.Api/HealthLink.Api/Controllers/ClientPackagesController.cs
+ M HealthLink.Api/HealthLink.Api/Controllers/ExpertAvailabilityController.cs
+ M HealthLink.Api/HealthLink.Api/Controllers/ExpertController.cs
+ M HealthLink.Api/HealthLink.Api/Controllers/ExpertScheduleController.cs
+ M HealthLink.Api/HealthLink.Api/Controllers/PaymentsController.cs
+ M HealthLink.Api/HealthLink.Api/Controllers/ReviewsController.cs
+ M HealthLink.Api/HealthLink.Api/Data/AppDbContext.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Admin/AppointmentDtos.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Admin/ServicePackageDtos.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Appointments/AppointmentResponse.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Expert/ExpertAvailabilitySlotResponse.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Expert/ExpertListItemDto.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Expert/ExpertProfileDto.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Expert/ExpertPublicProfileDto.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Expert/UpdateExpertRequestDto.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Messaging/MessagingDtos.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Package/CreateServicePackageRequest.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Package/PurchasePackageResponse.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Package/ServicePackageDto.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Package/UpdateServicePackageRequest.cs
+ M HealthLink.Api/HealthLink.Api/Dtos/Review/ReviewDto.cs
+ M HealthLink.Api/HealthLink.Api/Entities/Appointment.cs
+ M HealthLink.Api/HealthLink.Api/Entities/Enums/AppointmentStatus.cs
+ M HealthLink.Api/HealthLink.Api/Entities/Enums/SlotStatus.cs
+ M HealthLink.Api/HealthLink.Api/Entities/Expert.cs
+ M HealthLink.Api/HealthLink.Api/Entities/ExpertAvailabilitySlot.cs
+ M HealthLink.Api/HealthLink.Api/Entities/Payment.cs
+ M HealthLink.Api/HealthLink.Api/Entities/ServicePackage.cs
+ M HealthLink.Api/HealthLink.Api/HealthLink.Api.csproj
+ M HealthLink.Api/HealthLink.Api/Middleware/GlobalExceptionHandlerMiddleware.cs
+ M HealthLink.Api/HealthLink.Api/Migrations/AppDbContextModelSnapshot.cs
+ M HealthLink.Api/HealthLink.Api/Program.cs
+ M HealthLink.Api/HealthLink.Api/Services/AppointmentService.cs
+ M HealthLink.Api/HealthLink.Api/Services/ClientPackageService.cs
+ M HealthLink.Api/HealthLink.Api/Services/ExpertAvailabilityService.cs
+ M HealthLink.Api/HealthLink.Api/Services/ExpertService.cs
+ M HealthLink.Api/HealthLink.Api/Services/Interfaces/IAppointmentService.cs
+ M HealthLink.Api/HealthLink.Api/Services/Interfaces/IClientPackageService.cs
+ M HealthLink.Api/HealthLink.Api/Services/Interfaces/IExpertAvailabilityService.cs
+ M HealthLink.Api/HealthLink.Api/Services/Interfaces/IExpertService.cs
+ M HealthLink.Api/HealthLink.Api/Services/Interfaces/IMessagingService.cs
+ M HealthLink.Api/HealthLink.Api/Services/Interfaces/IReviewService.cs
+ M HealthLink.Api/HealthLink.Api/Services/MessagingService.cs
+ M HealthLink.Api/HealthLink.Api/Services/ReviewService.cs
+ M HealthLink.Api/HealthLink.Api/Services/ServicePackageService.cs
+ M healthlink-frontend/app/admin/appointments/page.tsx
+ M healthlink-frontend/app/admin/clients/page.tsx
+ M healthlink-frontend/app/admin/experts/page.tsx
+ M healthlink-frontend/app/client/appointments/new/page.tsx
+ M healthlink-frontend/app/client/appointments/page.tsx
+ M healthlink-frontend/app/client/experts/page.tsx
+ M healthlink-frontend/app/client/layout.tsx
+ M healthlink-frontend/app/client/messages/page.tsx
+ M healthlink-frontend/app/client/packages/[id]/page.tsx
+ M healthlink-frontend/app/client/packages/page.tsx
+ M healthlink-frontend/app/expert/appointments/page.tsx
+ M healthlink-frontend/app/expert/calendar/components/CalendarView.tsx
+ M healthlink-frontend/app/expert/clients/page.tsx
+ M healthlink-frontend/app/expert/dashboard/page.tsx
+ M healthlink-frontend/app/expert/layout.tsx
+ M healthlink-frontend/app/expert/messages/page.tsx
+ M healthlink-frontend/app/expert/profile/page.tsx
+ M healthlink-frontend/app/expert/reviews/page.tsx
+ M healthlink-frontend/app/experts/[id]/page.tsx
+ M healthlink-frontend/app/login/page.tsx
+ M healthlink-frontend/app/page.tsx
+ M healthlink-frontend/components/Navbar.tsx
+ M healthlink-frontend/components/admin/ServicePackageFormDialog.tsx
+ M healthlink-frontend/components/admin/ServicePackageTable.tsx
+ M healthlink-frontend/contexts/AuthContext.tsx
+ M healthlink-frontend/lib/utils.ts
+ M healthlink-frontend/package-lock.json
+ M healthlink-frontend/package.json
+ M healthlink-frontend/types/appointment.ts
+?? HealthLink.Api/HealthLink.Api/Common/Errors/DailyException.cs
+?? HealthLink.Api/HealthLink.Api/Controllers/FavoritesController.cs
+?? HealthLink.Api/HealthLink.Api/Controllers/MessagesController.cs
+?? HealthLink.Api/HealthLink.Api/Dtos/Appointments/MeetingSessionResponse.cs
+?? HealthLink.Api/HealthLink.Api/Dtos/Appointments/MyExpertDto.cs
+?? HealthLink.Api/HealthLink.Api/Dtos/Expert/ExpertClientDto.cs
+?? HealthLink.Api/HealthLink.Api/Dtos/Expert/ExpertDashboardResponse.cs
+?? HealthLink.Api/HealthLink.Api/Entities/FavoriteExpert.cs
+?? HealthLink.Api/HealthLink.Api/Entities/TimeSlotTemplate.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260211080307_AddValidityDaysToServicePackage.Designer.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260211080307_AddValidityDaysToServicePackage.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260211172419_AddTimeSlotTemplateAndRefactorAvailability.Designer.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260211172419_AddTimeSlotTemplateAndRefactorAvailability.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260212213720_AddFavoriteExperts.Designer.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260212213720_AddFavoriteExperts.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260213112543_AddProfileDescriptionToExpert.Designer.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260213112543_AddProfileDescriptionToExpert.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260213165154_ReplaceZoomLinkWithDailyFields.Designer.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260213165154_ReplaceZoomLinkWithDailyFields.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260217124708_AddIyzicoTokenToPayment.Designer.cs
+?? HealthLink.Api/HealthLink.Api/Migrations/20260217124708_AddIyzicoTokenToPayment.cs
+?? HealthLink.Api/HealthLink.Api/Services/AppointmentAutoCompleteService.cs
+?? HealthLink.Api/HealthLink.Api/Services/DailyService.cs
+?? HealthLink.Api/HealthLink.Api/Services/Interfaces/IDailyService.cs
+?? HealthLink.Api/HealthLink.Api/Services/Interfaces/IIyzicoService.cs
+?? HealthLink.Api/HealthLink.Api/Services/IyzicoService.cs
+?? build_output.txt
+?? git_status.txt
+?? healthlink-frontend/app/client/appointments/[id]/
+?? healthlink-frontend/app/client/my-experts/
+?? healthlink-frontend/app/client/payments/
+?? healthlink-frontend/app/expert/appointments/[id]/
+?? healthlink-frontend/app/experts/layout.tsx
+?? healthlink-frontend/app/shared/
+?? healthlink-frontend/components/chat/
+?? healthlink-frontend/components/video/
+?? healthlink-frontend/contexts/ChatContext.tsx

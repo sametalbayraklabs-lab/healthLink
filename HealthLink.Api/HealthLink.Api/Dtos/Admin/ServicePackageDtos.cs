@@ -9,6 +9,7 @@ public class ServicePackageDto
     public string? Description { get; set; }
     public ExpertType ExpertType { get; set; }
     public int SessionCount { get; set; }
+    public int ValidityDays { get; set; }
     public decimal Price { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -21,6 +22,7 @@ public class CreateServicePackageDto
     public string? Description { get; set; }
     public ExpertType ExpertType { get; set; }
     public int SessionCount { get; set; }
+    public int ValidityDays { get; set; } = 30;
     public decimal Price { get; set; }
     public bool IsActive { get; set; } = true;
 }
@@ -31,6 +33,7 @@ public class UpdateServicePackageDto
     public string? Description { get; set; }
     public ExpertType? ExpertType { get; set; }
     public int? SessionCount { get; set; }
+    public int? ValidityDays { get; set; }
     public decimal? Price { get; set; }
     public bool? IsActive { get; set; }
 }

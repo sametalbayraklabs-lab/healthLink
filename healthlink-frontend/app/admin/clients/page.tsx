@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Container,
     Typography,
@@ -66,10 +66,22 @@ export default function AdminClientsPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [filterActive, setFilterActive] = useState<string>('');
     const [page, setPage] = useState(1);
     const [success, setSuccess] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+
+    const handleSearchChange = useCallback((value: string) => {
+        setSearch(value);
+        setPage(1);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(() => {
+            setDebouncedSearch(value);
+        }, 400);
+    }, []);
+
     // Detail dialog
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<ClientDetail | null>(null);
@@ -86,13 +98,13 @@ export default function AdminClientsPage() {
 
     useEffect(() => {
         fetchClients();
-    }, [search, filterActive, page]);
+    }, [debouncedSearch, filterActive, page]);
 
     const fetchClients = async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
-            if (search) params.append('search', search);
+            if (debouncedSearch) params.append('search', debouncedSearch);
             if (filterActive) params.append('isActive', filterActive);
             params.append('page', page.toString());
             params.append('pageSize', '20');
@@ -235,10 +247,7 @@ export default function AdminClientsPage() {
                 <TextField
                     label="Ara (İsim, Email)"
                     value={search}
-                    onChange={(e) => {
-                        setSearch(e.target.value);
-                        setPage(1);
-                    }}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     sx={{ minWidth: 300 }}
                 />
 

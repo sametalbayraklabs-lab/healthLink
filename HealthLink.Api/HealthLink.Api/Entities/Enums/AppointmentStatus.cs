@@ -7,7 +7,8 @@
         CancelledByClient = 3,
         CancelledByExpert = 4,
         NoShow = 5,
-        Incomplete = 6
+        Incomplete = 6,
+        InProgress = 7     // Video session active
     }
 }
 

@@ -29,12 +29,13 @@ public class ClientPackagesController : BaseAuthenticatedController
     }
 
     /// <summary>
-    /// Purchase a package
+    /// Purchase a package (initiates Iyzico checkout form)
     /// </summary>
     [HttpPost("purchase")]
     public async Task<ActionResult<PurchasePackageResponse>> Purchase([FromBody] PurchasePackageRequest request)
     {
-        var response = await _clientPackageService.PurchasePackageAsync(UserId, request);
+        var buyerIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        var response = await _clientPackageService.PurchasePackageAsync(UserId, request, buyerIp);
         return Ok(response);
     }
 

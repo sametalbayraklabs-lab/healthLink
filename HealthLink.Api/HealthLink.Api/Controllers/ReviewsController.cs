@@ -40,10 +40,22 @@ public class ReviewsController : ControllerBase
     }
 
     /// <summary>
-    /// Get my reviews
+    /// Get my reviews as an expert (all statuses)
+    /// </summary>
+    [HttpGet("my-expert")]
+    [Authorize(Roles = "Expert")]
+    public async Task<ActionResult<List<ReviewDto>>> GetMyExpertReviews()
+    {
+        var userId = User.GetUserId();
+        var reviews = await _reviewService.GetMyExpertReviewsAsync(userId);
+        return Ok(reviews);
+    }
+
+    /// <summary>
+    /// Get my reviews (as client)
     /// </summary>
     [HttpGet("me")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    // [Authorize(Roles = "...")]  // Temporarily disabled
     public async Task<ActionResult<List<ReviewDto>>> GetMyReviews()
     {
         var userId = User.GetUserId();

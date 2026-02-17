@@ -2,23 +2,19 @@ export interface Appointment {
     id: number;
     clientId: number;
     expertId: number;
+    expertName?: string;
+    expertTitle?: string;
     clientPackageId?: number;
     serviceType: string;
     startDateTime: string;
     endDateTime: string;
-    zoomLink?: string;
+    dailyRoomName?: string;
+    meetingUrl?: string;
     status: string;
+    hasReview?: boolean;
+    reviewId?: number;
     createdAt: string;
     updatedAt?: string;
-    client?: {
-        firstName: string;
-        lastName: string;
-    };
-    expert?: {
-        firstName: string;
-        lastName: string;
-        title?: string;
-    };
 }
 
 export interface CreateAppointmentRequest {

@@ -84,11 +84,27 @@ namespace HealthLink.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DailyRoomName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTime>("EndDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("ExpertId")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("MeetingUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("RecordingStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("RecordingUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("ServiceType")
                         .HasColumnType("integer");
@@ -102,10 +118,6 @@ namespace HealthLink.Api.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ZoomLink")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
 
@@ -656,6 +668,10 @@ namespace HealthLink.Api.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<string>("ProfileDescription")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
                     b.Property<string>("ProfilePhotoUrl")
                         .HasColumnType("text");
 
@@ -695,26 +711,34 @@ namespace HealthLink.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("EndDateTime")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
 
                     b.Property<long>("ExpertId")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTime>("StartDateTime")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("SlotTime")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
 
                     b.Property<int>("Status")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
+                    b.Property<int>("TimeSlotTemplateId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExpertId", "StartDateTime", "EndDateTime");
+                    b.HasIndex("TimeSlotTemplateId");
+
+                    b.HasIndex("ExpertId", "Date", "TimeSlotTemplateId")
+                        .IsUnique();
 
                     b.ToTable("ExpertAvailabilitySlots", (string)null);
                 });
@@ -869,6 +893,33 @@ namespace HealthLink.Api.Migrations
                     b.ToTable("ExpertSpecializations", (string)null);
                 });
 
+            modelBuilder.Entity("HealthLink.Api.Entities.FavoriteExpert", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ClientId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("ExpertId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpertId");
+
+                    b.HasIndex("ClientId", "ExpertId")
+                        .IsUnique();
+
+                    b.ToTable("FavoriteExperts", (string)null);
+                });
+
             modelBuilder.Entity("HealthLink.Api.Entities.Message", b =>
                 {
                     b.Property<long>("Id")
@@ -945,6 +996,9 @@ namespace HealthLink.Api.Migrations
                     b.Property<string>("GatewayPaymentId")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("IyzicoToken")
+                        .HasColumnType("text");
 
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
@@ -1098,6 +1152,9 @@ namespace HealthLink.Api.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("ValidityDays")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.ToTable("ServicePackages", (string)null);
@@ -1106,26 +1163,28 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5872),
+                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(881),
                             Currency = "TRY",
                             Description = "One online consultation session",
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Single Session",
                             Price = 750m,
-                            SessionCount = 1
+                            SessionCount = 1,
+                            ValidityDays = 30
                         },
                         new
                         {
                             Id = 2L,
-                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5874),
+                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(884),
                             Currency = "TRY",
                             Description = "Four online consultation sessions",
                             ExpertType = 0,
                             IsActive = true,
                             Name = "4 Session Package",
                             Price = 2600m,
-                            SessionCount = 4
+                            SessionCount = 4,
+                            ValidityDays = 90
                         });
                 });
 
@@ -1174,7 +1233,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 1L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5847),
+                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(839),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Clinical Nutrition"
@@ -1183,7 +1242,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 2L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5848),
+                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(841),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Sports Nutrition"
@@ -1192,7 +1251,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 3L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5849),
+                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(843),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Weight Management"
@@ -1233,23 +1292,434 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5640),
+                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(682),
                             Key = "Platform.CommissionRate",
                             Value = "0.15"
                         },
                         new
                         {
                             Id = 2L,
-                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5643),
+                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(685),
                             Key = "Session.DefaultDurationMinutes",
                             Value = "30"
                         },
                         new
                         {
                             Id = 3L,
-                            CreatedAt = new DateTime(2026, 2, 9, 21, 7, 1, 960, DateTimeKind.Utc).AddTicks(5644),
+                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(689),
                             Key = "Session.CancelLimitHours",
                             Value = "24"
+                        });
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.TimeSlotTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TimeSlotTemplates", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(0, 30, 0),
+                            SortOrder = 1,
+                            StartTime = new TimeOnly(0, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 2,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(1, 0, 0),
+                            SortOrder = 2,
+                            StartTime = new TimeOnly(0, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 3,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(1, 30, 0),
+                            SortOrder = 3,
+                            StartTime = new TimeOnly(1, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 4,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(2, 0, 0),
+                            SortOrder = 4,
+                            StartTime = new TimeOnly(1, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 5,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(2, 30, 0),
+                            SortOrder = 5,
+                            StartTime = new TimeOnly(2, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 6,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(3, 0, 0),
+                            SortOrder = 6,
+                            StartTime = new TimeOnly(2, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 7,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(3, 30, 0),
+                            SortOrder = 7,
+                            StartTime = new TimeOnly(3, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 8,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(4, 0, 0),
+                            SortOrder = 8,
+                            StartTime = new TimeOnly(3, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 9,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(4, 30, 0),
+                            SortOrder = 9,
+                            StartTime = new TimeOnly(4, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 10,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(5, 0, 0),
+                            SortOrder = 10,
+                            StartTime = new TimeOnly(4, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 11,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(5, 30, 0),
+                            SortOrder = 11,
+                            StartTime = new TimeOnly(5, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 12,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(6, 0, 0),
+                            SortOrder = 12,
+                            StartTime = new TimeOnly(5, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 13,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(6, 30, 0),
+                            SortOrder = 13,
+                            StartTime = new TimeOnly(6, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 14,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(7, 0, 0),
+                            SortOrder = 14,
+                            StartTime = new TimeOnly(6, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 15,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(7, 30, 0),
+                            SortOrder = 15,
+                            StartTime = new TimeOnly(7, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 16,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(8, 0, 0),
+                            SortOrder = 16,
+                            StartTime = new TimeOnly(7, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 17,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(8, 30, 0),
+                            SortOrder = 17,
+                            StartTime = new TimeOnly(8, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 18,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(9, 0, 0),
+                            SortOrder = 18,
+                            StartTime = new TimeOnly(8, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 19,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(9, 30, 0),
+                            SortOrder = 19,
+                            StartTime = new TimeOnly(9, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 20,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(10, 0, 0),
+                            SortOrder = 20,
+                            StartTime = new TimeOnly(9, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 21,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(10, 30, 0),
+                            SortOrder = 21,
+                            StartTime = new TimeOnly(10, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 22,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(11, 0, 0),
+                            SortOrder = 22,
+                            StartTime = new TimeOnly(10, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 23,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(11, 30, 0),
+                            SortOrder = 23,
+                            StartTime = new TimeOnly(11, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 24,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(12, 0, 0),
+                            SortOrder = 24,
+                            StartTime = new TimeOnly(11, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 25,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(12, 30, 0),
+                            SortOrder = 25,
+                            StartTime = new TimeOnly(12, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 26,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(13, 0, 0),
+                            SortOrder = 26,
+                            StartTime = new TimeOnly(12, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 27,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(13, 30, 0),
+                            SortOrder = 27,
+                            StartTime = new TimeOnly(13, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 28,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(14, 0, 0),
+                            SortOrder = 28,
+                            StartTime = new TimeOnly(13, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 29,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(14, 30, 0),
+                            SortOrder = 29,
+                            StartTime = new TimeOnly(14, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 30,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(15, 0, 0),
+                            SortOrder = 30,
+                            StartTime = new TimeOnly(14, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 31,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(15, 30, 0),
+                            SortOrder = 31,
+                            StartTime = new TimeOnly(15, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 32,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(16, 0, 0),
+                            SortOrder = 32,
+                            StartTime = new TimeOnly(15, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 33,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(16, 30, 0),
+                            SortOrder = 33,
+                            StartTime = new TimeOnly(16, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 34,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(17, 0, 0),
+                            SortOrder = 34,
+                            StartTime = new TimeOnly(16, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 35,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(17, 30, 0),
+                            SortOrder = 35,
+                            StartTime = new TimeOnly(17, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 36,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(18, 0, 0),
+                            SortOrder = 36,
+                            StartTime = new TimeOnly(17, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 37,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(18, 30, 0),
+                            SortOrder = 37,
+                            StartTime = new TimeOnly(18, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 38,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(19, 0, 0),
+                            SortOrder = 38,
+                            StartTime = new TimeOnly(18, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 39,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(19, 30, 0),
+                            SortOrder = 39,
+                            StartTime = new TimeOnly(19, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 40,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(20, 0, 0),
+                            SortOrder = 40,
+                            StartTime = new TimeOnly(19, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 41,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(20, 30, 0),
+                            SortOrder = 41,
+                            StartTime = new TimeOnly(20, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 42,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(21, 0, 0),
+                            SortOrder = 42,
+                            StartTime = new TimeOnly(20, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 43,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(21, 30, 0),
+                            SortOrder = 43,
+                            StartTime = new TimeOnly(21, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 44,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(22, 0, 0),
+                            SortOrder = 44,
+                            StartTime = new TimeOnly(21, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 45,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(22, 30, 0),
+                            SortOrder = 45,
+                            StartTime = new TimeOnly(22, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 46,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(23, 0, 0),
+                            SortOrder = 46,
+                            StartTime = new TimeOnly(22, 30, 0)
+                        },
+                        new
+                        {
+                            Id = 47,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(23, 30, 0),
+                            SortOrder = 47,
+                            StartTime = new TimeOnly(23, 0, 0)
+                        },
+                        new
+                        {
+                            Id = 48,
+                            DurationMinutes = 30,
+                            EndTime = new TimeOnly(0, 0, 0),
+                            SortOrder = 48,
+                            StartTime = new TimeOnly(23, 30, 0)
                         });
                 });
 
@@ -1523,7 +1993,15 @@ namespace HealthLink.Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HealthLink.Api.Entities.TimeSlotTemplate", "TimeSlotTemplate")
+                        .WithMany()
+                        .HasForeignKey("TimeSlotTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Expert");
+
+                    b.Navigation("TimeSlotTemplate");
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.ExpertCertificate", b =>
@@ -1587,6 +2065,25 @@ namespace HealthLink.Api.Migrations
                     b.Navigation("Expert");
 
                     b.Navigation("Specialization");
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.FavoriteExpert", b =>
+                {
+                    b.HasOne("HealthLink.Api.Entities.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HealthLink.Api.Entities.Expert", "Expert")
+                        .WithMany()
+                        .HasForeignKey("ExpertId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+
+                    b.Navigation("Expert");
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.Message", b =>

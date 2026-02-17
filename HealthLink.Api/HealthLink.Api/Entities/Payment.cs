@@ -26,6 +26,11 @@ namespace HealthLink.Api.Entities
 
         public string? ProviderRawResponse { get; set; }
 
+        /// <summary>
+        /// Iyzico Checkout Form token for tracking payment status
+        /// </summary>
+        public string? IyzicoToken { get; set; }
+
         public DateTime? ConfirmedAt { get; set; }
 
         public DateTime CreatedAt { get; set; }

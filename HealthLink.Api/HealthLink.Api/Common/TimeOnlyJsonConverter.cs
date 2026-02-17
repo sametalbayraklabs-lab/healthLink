@@ -36,7 +36,7 @@ public class TimeOnlyJsonConverter : JsonConverter<TimeOnly>
 
     public override void Write(Utf8JsonWriter writer, TimeOnly value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value.ToString(TimeFormat));
+        writer.WriteStringValue(value.ToString(ShortTimeFormat));
     }
 }
 
@@ -75,7 +75,7 @@ public class NullableTimeOnlyJsonConverter : JsonConverter<TimeOnly?>
     {
         if (value.HasValue)
         {
-            writer.WriteStringValue(value.Value.ToString(TimeFormat));
+            writer.WriteStringValue(value.Value.ToString(ShortTimeFormat));
         }
         else
         {

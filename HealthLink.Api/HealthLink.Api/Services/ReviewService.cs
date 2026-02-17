@@ -70,7 +70,25 @@ public class ReviewService : IReviewService
     public async Task<List<ReviewDto>> GetExpertReviewsAsync(long expertId)
     {
         var reviews = await _db.Reviews
+            .Include(x => x.Client)
             .Where(x => x.ExpertId == expertId && x.Status == ReviewStatus.Approved)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+
+        return reviews.Select(MapToDto).ToList();
+    }
+
+    public async Task<List<ReviewDto>> GetMyExpertReviewsAsync(long userId)
+    {
+        var expert = await _db.Experts.FirstOrDefaultAsync(x => x.UserId == userId);
+        if (expert == null)
+        {
+            throw new BusinessException("NOT_AN_EXPERT", "Kullanıcı uzman değil.", 403);
+        }
+
+        var reviews = await _db.Reviews
+            .Include(x => x.Client)
+            .Where(x => x.ExpertId == expert.Id && x.Status == ReviewStatus.Approved)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
 
@@ -134,6 +152,7 @@ public class ReviewService : IReviewService
             Id = review.Id,
             AppointmentId = review.AppointmentId,
             ClientId = review.ClientId,
+            ClientName = review.Client != null ? $"{review.Client.FirstName} {review.Client.LastName}" : null,
             ExpertId = review.ExpertId,
             Rating = review.Rating,
             Comment = review.Comment,

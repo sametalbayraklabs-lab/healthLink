@@ -28,6 +28,16 @@ public class ExpertController : BaseAuthenticatedController
     }
 
     /// <summary>
+    /// Get expert dashboard stats
+    /// </summary>
+    [HttpGet("dashboard")]
+    public async Task<ActionResult<ExpertDashboardResponse>> GetDashboard()
+    {
+        var dashboard = await _service.GetExpertDashboardAsync(UserId);
+        return Ok(dashboard);
+    }
+
+    /// <summary>
     /// Update current expert's profile
     /// </summary>
     [HttpPut("profile")]
@@ -46,5 +56,15 @@ public class ExpertController : BaseAuthenticatedController
     {
         var result = await _service.GetAvailabilityAsync(id, date);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Get expert's clients list
+    /// </summary>
+    [HttpGet("clients")]
+    public async Task<IActionResult> GetClients()
+    {
+        var clients = await _service.GetExpertClientsAsync(UserId);
+        return Ok(clients);
     }
 }

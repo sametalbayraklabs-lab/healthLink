@@ -262,11 +262,10 @@ public class ExpertScheduleController : BaseAuthenticatedController
             return BadRequest(new { message = "Otomatik müsait işaretle aktif olan gün bulunamadı" });
         }
 
-        // Get session duration
-        var durationMinutes = await _db.SystemSettings
-            .Where(x => x.Key == "Session.DefaultDurationMinutes")
-            .Select(x => int.Parse(x.Value))
-            .FirstAsync();
+        // Load all time slot templates for matching
+        var timeSlotTemplates = await _db.TimeSlotTemplates
+            .OrderBy(t => t.SortOrder)
+            .ToListAsync();
 
         int slotsCreated = 0;
         var currentDate = DateOnly.FromDateTime(request.StartDate);
@@ -288,21 +287,32 @@ public class ExpertScheduleController : BaseAuthenticatedController
                         x.Status == Entities.Enums.AppointmentStatus.Scheduled)
                     .ToListAsync();
 
-                // Generate slots for each time range in template
+                // Find matching time slot templates for each schedule time range
                 foreach (var timeSlot in template.TimeSlots.OrderBy(ts => ts.StartTime))
                 {
-                    var dayStart = DateTime.SpecifyKind(currentDate.ToDateTime(timeSlot.StartTime), DateTimeKind.Utc);
-                    var dayEnd = DateTime.SpecifyKind(currentDate.ToDateTime(timeSlot.EndTime), DateTimeKind.Utc);
-                    var cursor = dayStart;
-
-                    while (cursor.AddMinutes(durationMinutes) <= dayEnd)
+                    // Find all timeSlotTemplates that fall within this time range
+                    // Special handling for templates that wrap midnight (23:30→00:00):
+                    // EndTime 00:00 is less than any other TimeOnly, so we must explicitly check
+                    var matchingTemplates = timeSlotTemplates.Where(tst =>
                     {
-                        var slotEnd = cursor.AddMinutes(durationMinutes);
+                        // Skip templates wrapping midnight (EndTime = 00:00) unless
+                        // the schedule time range also wraps midnight
+                        if (tst.EndTime == TimeOnly.MinValue && timeSlot.EndTime != TimeOnly.MinValue)
+                            return false;
+
+                        return tst.StartTime >= timeSlot.StartTime &&
+                               tst.EndTime <= timeSlot.EndTime;
+                    });
+
+                    foreach (var tst in matchingTemplates)
+                    {
+                        var slotStartDt = DateTime.SpecifyKind(currentDate.ToDateTime(tst.StartTime), DateTimeKind.Utc);
+                        var slotEndDt = DateTime.SpecifyKind(currentDate.ToDateTime(tst.EndTime), DateTimeKind.Utc);
 
                         // Check if slot overlaps with existing appointment
                         var hasAppointment = appointments.Any(a =>
-                            a.StartDateTime < slotEnd &&
-                            a.EndDateTime > cursor);
+                            a.StartDateTime < slotEndDt &&
+                            a.EndDateTime > slotStartDt);
 
                         if (!hasAppointment)
                         {
@@ -310,8 +320,8 @@ public class ExpertScheduleController : BaseAuthenticatedController
                             var existingSlot = await _db.ExpertAvailabilitySlots
                                 .FirstOrDefaultAsync(s =>
                                     s.ExpertId == ExpertId &&
-                                    s.StartDateTime == cursor &&
-                                    s.EndDateTime == slotEnd);
+                                    s.Date == currentDate &&
+                                    s.TimeSlotTemplateId == tst.Id);
 
                             if (existingSlot == null)
                             {
@@ -319,16 +329,15 @@ public class ExpertScheduleController : BaseAuthenticatedController
                                 _db.ExpertAvailabilitySlots.Add(new ExpertAvailabilitySlot
                                 {
                                     ExpertId = ExpertId!.Value,
-                                    StartDateTime = cursor,
-                                    EndDateTime = slotEnd,
+                                    Date = currentDate,
+                                    TimeSlotTemplateId = tst.Id,
+                                    SlotTime = tst.StartTime.ToString("HH:mm"),
                                     Status = SlotStatus.Available,
                                     CreatedAt = DateTime.UtcNow
                                 });
                                 slotsCreated++;
                             }
                         }
-
-                        cursor = slotEnd;
                     }
                 }
             }

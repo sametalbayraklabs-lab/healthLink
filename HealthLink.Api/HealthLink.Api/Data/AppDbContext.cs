@@ -31,6 +31,7 @@ namespace HealthLink.Api.Data
         public DbSet<ExpertScheduleTimeSlot> ExpertScheduleTimeSlots => Set<ExpertScheduleTimeSlot>();
         public DbSet<ExpertScheduleException> ExpertScheduleExceptions => Set<ExpertScheduleException>();
         public DbSet<ExpertAvailabilitySlot> ExpertAvailabilitySlots => Set<ExpertAvailabilitySlot>();
+        public DbSet<TimeSlotTemplate> TimeSlotTemplates => Set<TimeSlotTemplate>();
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<Complaint> Complaints => Set<Complaint>();
         public DbSet<Conversation> Conversations => Set<Conversation>();
@@ -40,6 +41,7 @@ namespace HealthLink.Api.Data
         public DbSet<ContentItemReaction> ContentItemReactions => Set<ContentItemReaction>();
         public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<FavoriteExpert> FavoriteExperts => Set<FavoriteExpert>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -174,6 +176,10 @@ namespace HealthLink.Api.Data
 
                 entity.Property(x => x.Bio)
                       .HasMaxLength(2000)
+                      .IsRequired(false);
+
+                entity.Property(x => x.ProfileDescription)
+                      .HasMaxLength(300)
                       .IsRequired(false);
 
                 entity.Property(x => x.City)
@@ -480,8 +486,21 @@ namespace HealthLink.Api.Data
                 entity.Property(x => x.EndDateTime)
                       .IsRequired();
 
-                entity.Property(x => x.ZoomLink)
+                // Daily.co video fields
+                entity.Property(x => x.DailyRoomName)
+                      .HasMaxLength(100)
+                      .IsRequired(false);
+
+                entity.Property(x => x.MeetingUrl)
                       .HasMaxLength(500)
+                      .IsRequired(false);
+
+                entity.Property(x => x.RecordingUrl)
+                      .HasMaxLength(500)
+                      .IsRequired(false);
+
+                entity.Property(x => x.RecordingStatus)
+                      .HasMaxLength(30)
                       .IsRequired(false);
 
                 entity.Property(x => x.Status)
@@ -653,16 +672,52 @@ namespace HealthLink.Api.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            modelBuilder.Entity<TimeSlotTemplate>(entity =>
+            {
+                entity.ToTable("TimeSlotTemplates");
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.StartTime).IsRequired();
+                entity.Property(x => x.EndTime).IsRequired();
+                entity.Property(x => x.DurationMinutes).IsRequired();
+                entity.Property(x => x.SortOrder).IsRequired();
+
+                // Seed 48 half-hour slots
+                var slots = new List<TimeSlotTemplate>();
+                for (int i = 0; i < 48; i++)
+                {
+                    var startHour = i / 2;
+                    var startMinute = (i % 2) * 30;
+                    var endHour = (i + 1) / 2;
+                    var endMinute = ((i + 1) % 2) * 30;
+                    if (i == 47) { endHour = 0; endMinute = 0; } // 23:30 → 00:00
+
+                    slots.Add(new TimeSlotTemplate
+                    {
+                        Id = i + 1,
+                        StartTime = new TimeOnly(startHour, startMinute),
+                        EndTime = new TimeOnly(endHour, endMinute),
+                        DurationMinutes = 30,
+                        SortOrder = i + 1
+                    });
+                }
+                entity.HasData(slots);
+            });
+
             modelBuilder.Entity<ExpertAvailabilitySlot>(entity =>
             {
                 entity.ToTable("ExpertAvailabilitySlots");
 
                 entity.HasKey(x => x.Id);
 
-                entity.Property(x => x.StartDateTime)
+                entity.Property(x => x.Date)
                       .IsRequired();
 
-                entity.Property(x => x.EndDateTime)
+                entity.Property(x => x.TimeSlotTemplateId)
+                      .IsRequired();
+
+                entity.Property(x => x.SlotTime)
+                      .HasMaxLength(5)
                       .IsRequired();
 
                 entity.Property(x => x.Status)
@@ -680,8 +735,14 @@ namespace HealthLink.Api.Data
                       .HasForeignKey(x => x.ExpertId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                // Index for querying slots by expert and date range
-                entity.HasIndex(x => new { x.ExpertId, x.StartDateTime, x.EndDateTime });
+                entity.HasOne(x => x.TimeSlotTemplate)
+                      .WithMany()
+                      .HasForeignKey(x => x.TimeSlotTemplateId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Unique index: one slot per expert per day per template
+                entity.HasIndex(x => new { x.ExpertId, x.Date, x.TimeSlotTemplateId })
+                      .IsUnique();
             });
 
             modelBuilder.Entity<Review>(entity =>
@@ -1046,6 +1107,7 @@ namespace HealthLink.Api.Data
             Description = "One online consultation session",
             ExpertType = ExpertType.All,   // 0
             SessionCount = 1,
+            ValidityDays = 30,
             Price = 750,
             Currency = "TRY",
             IsActive = true,
@@ -1058,6 +1120,7 @@ namespace HealthLink.Api.Data
             Description = "Four online consultation sessions",
             ExpertType = ExpertType.All,   // 0
             SessionCount = 4,
+            ValidityDays = 90,
             Price = 2600,
             Currency = "TRY",
             IsActive = true,
@@ -1065,7 +1128,28 @@ namespace HealthLink.Api.Data
         }
     );
     
+            modelBuilder.Entity<FavoriteExpert>(entity =>
+            {
+                entity.ToTable("FavoriteExperts");
 
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.CreatedAt)
+                      .IsRequired();
+
+                entity.HasOne(x => x.Client)
+                      .WithMany()
+                      .HasForeignKey(x => x.ClientId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Expert)
+                      .WithMany()
+                      .HasForeignKey(x => x.ExpertId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => new { x.ClientId, x.ExpertId })
+                      .IsUnique();
+            });
 
         }
         public override async Task<int> SaveChangesAsync(

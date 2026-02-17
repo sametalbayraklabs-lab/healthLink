@@ -50,5 +50,10 @@ namespace HealthLink.Api.Services.Interfaces
         /// </summary>
         Task<IReadOnlyList<AppointmentResponse>> GetExpertAppointmentsAsync(
             long expertUserId);
+
+        /// <summary>
+        /// Returns distinct experts from the client's completed appointments.
+        /// </summary>
+        Task<IReadOnlyList<MyExpertDto>> GetMyExpertsAsync(long clientUserId);
     }
 }

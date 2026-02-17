@@ -33,4 +33,10 @@ public interface IExpertService
     
     // Appointment booking methods
     Task<AvailabilityDto> GetAvailabilityAsync(long expertId, DateOnly date);
+    
+    // Dashboard
+    Task<ExpertDashboardResponse> GetExpertDashboardAsync(long userId);
+    
+    // Clients
+    Task<IReadOnlyList<ExpertClientDto>> GetExpertClientsAsync(long userId);
 }

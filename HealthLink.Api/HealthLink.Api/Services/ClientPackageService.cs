@@ -14,15 +14,21 @@ public class ClientPackageService : IClientPackageService
     private readonly AppDbContext _db;
     private readonly IPaymentService _paymentService;
     private readonly IDiscountCodeService _discountService;
+    private readonly IIyzicoService _iyzicoService;
+    private readonly IConfiguration _configuration;
 
     public ClientPackageService(
         AppDbContext db,
         IPaymentService paymentService,
-        IDiscountCodeService discountService)
+        IDiscountCodeService discountService,
+        IIyzicoService iyzicoService,
+        IConfiguration configuration)
     {
         _db = db;
         _paymentService = paymentService;
         _discountService = discountService;
+        _iyzicoService = iyzicoService;
+        _configuration = configuration;
     }
 
     public async Task<List<ClientPackageDto>> GetMyPackagesAsync(long userId)
@@ -30,7 +36,7 @@ public class ClientPackageService : IClientPackageService
         var client = await _db.Clients.FirstOrDefaultAsync(x => x.UserId == userId);
         if (client == null)
         {
-            throw new BusinessException(ErrorCodes.NOT_A_CLIENT, "KullanÄ±cÄ± client deÄŸil.", 403);
+            throw new BusinessException(ErrorCodes.NOT_A_CLIENT, "Kullanıcı client değil.", 403);
         }
 
         var packages = await _db.ClientPackages
@@ -47,7 +53,7 @@ public class ClientPackageService : IClientPackageService
         var client = await _db.Clients.FirstOrDefaultAsync(x => x.UserId == userId);
         if (client == null)
         {
-            throw new BusinessException(ErrorCodes.NOT_A_CLIENT, "KullanÄ±cÄ± client deÄŸil.", 403);
+            throw new BusinessException(ErrorCodes.NOT_A_CLIENT, "Kullanıcı client değil.", 403);
         }
 
         var package = await _db.ClientPackages
@@ -56,24 +62,26 @@ public class ClientPackageService : IClientPackageService
 
         if (package == null)
         {
-            throw new BusinessException("CLIENT_PACKAGE_NOT_FOUND", "Paket bulunamadÄ±.", 404);
+            throw new BusinessException("CLIENT_PACKAGE_NOT_FOUND", "Paket bulunamadı.", 404);
         }
 
         return MapToDto(package);
     }
 
-    public async Task<PurchasePackageResponse> PurchasePackageAsync(long userId, PurchasePackageRequest request)
+    public async Task<PurchasePackageResponse> PurchasePackageAsync(long userId, PurchasePackageRequest request, string? buyerIp = null)
     {
-        var client = await _db.Clients.FirstOrDefaultAsync(x => x.UserId == userId);
+        var client = await _db.Clients
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(x => x.UserId == userId);
         if (client == null)
         {
-            throw new BusinessException(ErrorCodes.NOT_A_CLIENT, "KullanÄ±cÄ± client deÄŸil.", 403);
+            throw new BusinessException(ErrorCodes.NOT_A_CLIENT, "Kullanıcı client değil.", 403);
         }
 
         var servicePackage = await _db.ServicePackages.FindAsync(request.ServicePackageId);
         if (servicePackage == null || !servicePackage.IsActive)
         {
-            throw new BusinessException("PACKAGE_NOT_FOUND", "Paket bulunamadÄ± veya aktif deÄŸil.", 404);
+            throw new BusinessException("PACKAGE_NOT_FOUND", "Paket bulunamadı veya aktif değil.", 404);
         }
 
         decimal finalAmount = servicePackage.Price;
@@ -95,30 +103,30 @@ public class ClientPackageService : IClientPackageService
             }
         }
 
-        // Create ClientPackage
+        // Create ClientPackage with PendingPayment status
         var clientPackage = new ClientPackage
         {
             ClientId = client.Id,
             ServicePackageId = servicePackage.Id,
             TotalSessions = servicePackage.SessionCount,
             UsedSessions = 0,
-            Status = ClientPackageStatus.Active,
+            Status = ClientPackageStatus.PendingPayment,
             PurchaseDate = DateTime.UtcNow,
-            ExpireDate = DateTime.UtcNow.AddMonths(12), // 1 year validity
+            ExpireDate = DateTime.UtcNow.AddDays(servicePackage.ValidityDays),
             CreatedAt = DateTime.UtcNow
         };
 
         _db.ClientPackages.Add(clientPackage);
         await _db.SaveChangesAsync();
 
-        // Create Payment
+        // Create Payment with Pending status
         var payment = new Payment
         {
             ClientId = client.Id,
             ClientPackageId = clientPackage.Id,
             Amount = finalAmount,
             Currency = servicePackage.Currency,
-            PaymentMethod = "CreditCard", // Default
+            PaymentMethod = "CreditCard",
             Status = PaymentStatus.Pending,
             Gateway = PaymentGateway.Iyzico,
             CreatedAt = DateTime.UtcNow
@@ -127,16 +135,36 @@ public class ClientPackageService : IClientPackageService
         _db.Payments.Add(payment);
         await _db.SaveChangesAsync();
 
-        // Generate payment URL (mock for now)
-        var paymentUrl = $"https://payment-gateway.com/pay/{payment.Id}";
+        // Initialize Iyzico Checkout Form
+        var frontendUrl = _configuration["FrontendUrl"] ?? "http://localhost:3000";
+        var callbackUrl = _configuration["BackendUrl"] ?? "http://localhost:5254";
+        callbackUrl = $"{callbackUrl}/api/payments/iyzico-callback";
+
+        var (checkoutFormContent, token) = await _iyzicoService.InitializeCheckoutFormAsync(
+            paymentId: payment.Id,
+            amount: finalAmount,
+            currency: servicePackage.Currency,
+            buyerName: client.FirstName,
+            buyerSurname: client.LastName,
+            buyerEmail: client.User.Email,
+            buyerPhone: client.User.Phone,
+            buyerIp: buyerIp ?? "127.0.0.1",
+            itemName: servicePackage.Name,
+            callbackUrl: callbackUrl);
+
+        // Save Iyzico token to payment
+        payment.IyzicoToken = token;
+        payment.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
 
         return new PurchasePackageResponse
         {
             ClientPackageId = clientPackage.Id,
             PaymentId = payment.Id,
-            PaymentUrl = paymentUrl,
             FinalAmount = finalAmount,
-            DiscountAmount = discountAmount
+            DiscountAmount = discountAmount,
+            CheckoutFormContent = checkoutFormContent,
+            PaymentToken = token
         };
     }
 
@@ -153,6 +181,7 @@ public class ClientPackageService : IClientPackageService
                 Description = package.ServicePackage.Description,
                 ExpertType = package.ServicePackage.ExpertType.ToApiString(),
                 SessionCount = package.ServicePackage.SessionCount,
+                ValidityDays = package.ServicePackage.ValidityDays,
                 Price = package.ServicePackage.Price,
                 Currency = package.ServicePackage.Currency,
                 IsActive = package.ServicePackage.IsActive
@@ -165,4 +194,3 @@ public class ClientPackageService : IClientPackageService
         };
     }
 }
-

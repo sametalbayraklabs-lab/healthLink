@@ -7,6 +7,7 @@ public class ExpertProfileDto
     public string ExpertType { get; set; } = null!; // Enum as string
     public string? DisplayName { get; set; }
     public string? Bio { get; set; }
+    public string? ProfileDescription { get; set; }
     public string? City { get; set; }
     public string? WorkType { get; set; } // Enum as string
     public DateOnly? ExperienceStartDate { get; set; }

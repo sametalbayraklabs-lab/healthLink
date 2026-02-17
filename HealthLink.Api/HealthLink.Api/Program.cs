@@ -93,6 +93,7 @@ builder.Services.AddScoped<IServicePackageService, ServicePackageService>();
 builder.Services.AddScoped<IClientPackageService, ClientPackageService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDiscountCodeService, DiscountCodeService>();
+builder.Services.AddScoped<IIyzicoService, IyzicoService>();
 
 // API-3 Services (Review & Complaint)
 builder.Services.AddScoped<IReviewService, ReviewService>();
@@ -107,6 +108,12 @@ builder.Services.AddScoped<IContentService, ContentService>();
 // Existing services
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IExpertAvailabilityService, ExpertAvailabilityService>();
+
+// Daily.co video service (uses HttpClient)
+builder.Services.AddHttpClient<IDailyService, DailyService>();
+
+// Background services
+builder.Services.AddHostedService<AppointmentAutoCompleteService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

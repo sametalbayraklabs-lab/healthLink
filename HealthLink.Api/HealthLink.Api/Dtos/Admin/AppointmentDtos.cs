@@ -32,7 +32,7 @@ public class AdminAppointmentDetailDto
     public ServiceType ServiceType { get; set; }
     public DateTime StartDateTime { get; set; }
     public DateTime EndDateTime { get; set; }
-    public string? ZoomLink { get; set; }
+    public string? MeetingUrl { get; set; }
     public AppointmentStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

@@ -30,6 +30,7 @@ interface ServicePackage {
     description: string | null;
     expertType: string;
     sessionCount: number;
+    validityDays: number;
     price: number;
     isActive: boolean;
 }
@@ -54,6 +55,7 @@ export default function ServicePackageFormDialog({
         description: '',
         expertType: 'All',
         sessionCount: 1,
+        validityDays: 30,
         price: 0,
         isActive: true,
     });
@@ -85,6 +87,7 @@ export default function ServicePackageFormDialog({
                 description: servicePackage.description || '',
                 expertType: servicePackage.expertType,
                 sessionCount: servicePackage.sessionCount,
+                validityDays: servicePackage.validityDays,
                 price: servicePackage.price,
                 isActive: servicePackage.isActive,
             });
@@ -94,6 +97,7 @@ export default function ServicePackageFormDialog({
                 description: '',
                 expertType: 'All',
                 sessionCount: 1,
+                validityDays: 30,
                 price: 0,
                 isActive: true,
             });
@@ -177,6 +181,17 @@ export default function ServicePackageFormDialog({
                         required
                         fullWidth
                         inputProps={{ min: 1 }}
+                    />
+
+                    <TextField
+                        label="Geçerlilik Süresi (Gün)"
+                        type="number"
+                        value={formData.validityDays}
+                        onChange={(e) => setFormData({ ...formData, validityDays: parseInt(e.target.value) || 30 })}
+                        required
+                        fullWidth
+                        inputProps={{ min: 1 }}
+                        helperText="Paketin satın alındıktan sonra kaç gün geçerli olacağı"
                     />
 
                     <TextField

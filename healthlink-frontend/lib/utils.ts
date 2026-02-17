@@ -2,7 +2,10 @@ import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 export function formatDate(date: string | Date, formatStr: string = 'dd MMMM yyyy'): string {
-    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    // Backend stores wall-clock time marked as UTC for PostgreSQL compatibility.
+    // Strip timezone suffix so parseISO treats it as local time (no UTC→local conversion).
+    const cleaned = typeof date === 'string' ? date.replace(/Z$|[+-]\d{2}:\d{2}$/, '') : date;
+    const dateObj = typeof cleaned === 'string' ? parseISO(cleaned) : cleaned;
     return format(dateObj, formatStr, { locale: tr });
 }
 

@@ -332,6 +332,32 @@ Property 'item' does not exist on type 'GridBaseProps'
 
 ---
 
+### 12. Expert Availability Slot'larının Otomatik Oluşturulması
+
+**Durum**: Takvim günleri zaten her zaman görünürken, saat aralıkları yalnızca şablondan dinamik olarak hesaplanıyor — DB'de fiziksel kayıt yok.
+
+**Mevcut Durum**:
+- Uzman haftalık çalışma saatlerini şablona kaydediyor (`ExpertScheduleTemplate`)
+- `GetDailyAvailabilityAsync` şablondan dinamik olarak slot üretiyor (default: Kapalı)
+- `ExpertAvailabilitySlots` tablosuna sadece uzman manuel kayıt yaptığında yazılıyor
+- Takvim günleri doğal olarak her zaman var, ama saat slotları yalnızca sorgulandığında hesaplanıyor
+
+**Olması Gereken**:
+- Tıpkı takvim günlerinin her zaman mevcut olması gibi, `ExpertAvailabilitySlots` tablosunda her gün için saat slotları **önceden oluşturulmuş** olmalı
+- Background job (Hangfire, cron) ile gelecek X gün için slotlar otomatik oluşturulmalı
+- Yeni şablon kaydedildiğinde ilgili günlerin slotları otomatik güncellenebilmeli
+
+**Yapılması Gerekenler**:
+1. Background job mekanizması kur (Hangfire veya hosted service)
+2. Günlük çalışan bir job ile gelecek 30-60 gün için slot'ları önceden oluştur
+3. Şablon değiştirildiğinde etkilenen günlerin slot'larını yeniden oluştur
+4. Geçmiş günlerin slot'larını temizleme mekanizması
+
+**Tahmini Süre**: 8-12 saat  
+**Öncelik**: P3
+
+---
+
 ### 10. Test Coverage
 
 **Durum**: Unit test ve integration test yok.
@@ -394,6 +420,7 @@ Property 'item' does not exist on type 'GridBaseProps'
 ### Backlog
 - [ ] #11 Documentation iyileştirme
 - [ ] #10 Test coverage tamamla
+- [ ] #12 Expert availability slot'larının otomatik oluşturulması
 
 ---
 
@@ -406,5 +433,5 @@ Property 'item' does not exist on type 'GridBaseProps'
 
 ---
 
-**Son Güncelleme**: 1 Şubat 2026  
+**Son Güncelleme**: 11 Şubat 2026  
 **Güncelleyen**: AI Assistant

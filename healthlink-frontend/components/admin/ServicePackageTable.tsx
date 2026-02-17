@@ -42,6 +42,7 @@ interface ServicePackage {
     description: string | null;
     expertType: string;
     sessionCount: number;
+    validityDays: number;
     price: number;
     isActive: boolean;
     createdAt: string;
@@ -205,6 +206,7 @@ export default function ServicePackageTable() {
                             <TableCell>Açıklama</TableCell>
                             <TableCell>Uzman Tipi</TableCell>
                             <TableCell align="right">Seans Sayısı</TableCell>
+                            <TableCell align="right">Geçerlilik</TableCell>
                             <TableCell align="right">Fiyat</TableCell>
                             <TableCell>Durum</TableCell>
                             <TableCell align="right">İşlemler</TableCell>
@@ -213,7 +215,7 @@ export default function ServicePackageTable() {
                     <TableBody>
                         {packages.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} align="center">
+                                <TableCell colSpan={8} align="center">
                                     <Typography color="text.secondary">Henüz paket bulunmuyor</Typography>
                                 </TableCell>
                             </TableRow>
@@ -238,6 +240,9 @@ export default function ServicePackageTable() {
                                     </TableCell>
                                     <TableCell align="right">
                                         <Typography>{pkg.sessionCount} Seans</Typography>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <Typography>{pkg.validityDays} Gün</Typography>
                                     </TableCell>
                                     <TableCell align="right">
                                         <Typography fontWeight="medium">₺{pkg.price.toFixed(2)}</Typography>

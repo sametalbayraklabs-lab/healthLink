@@ -64,6 +64,7 @@ namespace HealthLink.Api.Services
                 ExpertType = expert.ExpertType.ToApiString(),
                 DisplayName = expert.DisplayName,
                 Bio = expert.Bio,
+                ProfileDescription = expert.ProfileDescription,
                 City = expert.City,
                 WorkType = expert.WorkType.ToApiString(),
                 ExperienceStartDate = expert.ExperienceStartDate,
@@ -83,6 +84,7 @@ namespace HealthLink.Api.Services
 
             expert.DisplayName = request.DisplayName;
             expert.Bio = request.Bio;
+            expert.ProfileDescription = request.ProfileDescription;
             expert.City = request.City;
             expert.WorkType = string.IsNullOrWhiteSpace(request.WorkType) ? null : EnumExtensions.ParseWorkType(request.WorkType);
             expert.ExperienceStartDate = request.ExperienceStartDate;
@@ -112,6 +114,7 @@ namespace HealthLink.Api.Services
                 ExpertType = expert.ExpertType.ToApiString(),
                 DisplayName = expert.DisplayName,
                 Bio = expert.Bio,
+                ProfileDescription = expert.ProfileDescription ?? (expert.Bio != null ? expert.Bio.Substring(0, Math.Min(expert.Bio.Length, 100)) : null),
                 City = expert.City,
                 WorkType = expert.WorkType.ToApiString(),
                 ExperienceStartDate = expert.ExperienceStartDate,
@@ -176,7 +179,8 @@ namespace HealthLink.Api.Services
                     TotalReviewCount = x.TotalReviewCount,
                     Specializations = x.ExpertSpecializations
                         .Select(es => es.Specialization.Name)
-                        .ToList()
+                        .ToList(),
+                    ProfileDescription = x.ProfileDescription ?? (x.Bio != null ? x.Bio.Substring(0, Math.Min(x.Bio.Length, 100)) : null)
                 })
                 .ToListAsync();
             return new Common.PagedResult<ExpertListItemDto>
@@ -334,12 +338,16 @@ namespace HealthLink.Api.Services
         }
         public async Task<AvailabilityDto> GetAvailabilityAsync(long expertId, DateOnly date)
         {
-            // Get expert's schedule template for the day
-            var dayOfWeek = (int)date.DayOfWeek;
-            var template = await _db.ExpertScheduleTemplates
-                .Include(x => x.TimeSlots)
-                .FirstOrDefaultAsync(x => x.ExpertId == expertId && x.DayOfWeek == dayOfWeek);
-            if (template == null || !template.IsOpen || template.TimeSlots.Count == 0)
+            // Get slots marked as Available from ExpertAvailabilitySlots
+            var availableSlots = await _db.ExpertAvailabilitySlots
+                .Include(s => s.TimeSlotTemplate)
+                .Where(s => s.ExpertId == expertId
+                    && s.Date == date
+                    && s.Status == Entities.Enums.SlotStatus.Available)
+                .OrderBy(s => s.TimeSlotTemplate.SortOrder)
+                .ToListAsync();
+
+            if (availableSlots.Count == 0)
             {
                 return new AvailabilityDto
                 {
@@ -348,47 +356,42 @@ namespace HealthLink.Api.Services
                     AvailableSlots = new List<TimeSlotDto>()
                 };
             }
-            // Get existing appointments for the date
-            var startOfDay = date.ToDateTime(TimeOnly.MinValue);
-            var endOfDay = date.ToDateTime(TimeOnly.MaxValue);
+
+            // Get existing appointments for the date to exclude booked slots
+            var startOfDay = DateTime.SpecifyKind(date.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            var endOfDay = DateTime.SpecifyKind(date.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc);
             var existingAppointments = await _db.Appointments
-                .Where(x => x.ExpertId == expertId 
-                    && x.StartDateTime >= startOfDay 
+                .Where(x => x.ExpertId == expertId
+                    && x.StartDateTime >= startOfDay
                     && x.StartDateTime < endOfDay
                     && x.Status == Entities.Enums.AppointmentStatus.Scheduled)
                 .Select(x => new { x.StartDateTime, x.EndDateTime })
                 .ToListAsync();
-            // Generate time slots (30 minutes each, standard session duration)
+
+            // Build available time slots, excluding ones blocked by appointments
             var slots = new List<TimeSlotDto>();
-            
-            // Generate slots for each time range
-            foreach (var timeSlot in template.TimeSlots.OrderBy(ts => ts.StartTime))
+
+            foreach (var slot in availableSlots)
             {
-                var currentTime = timeSlot.StartTime;
-                var endTime = timeSlot.EndTime;
-                
-                while (currentTime.AddMinutes(30) <= endTime)
+                var tpl = slot.TimeSlotTemplate;
+                var slotStartDt = date.ToDateTime(tpl.StartTime);
+                var slotEndDt = date.ToDateTime(tpl.EndTime);
+
+                // Check if slot overlaps with existing appointments
+                var hasAppointment = existingAppointments.Any(apt =>
+                    slotStartDt < apt.EndDateTime && slotEndDt > apt.StartDateTime);
+
+                if (!hasAppointment)
                 {
-                    var slotStart = currentTime;
-                    var slotEnd = currentTime.AddMinutes(30);
-                    var slotStartDateTime = date.ToDateTime(slotStart);
-                    var slotEndDateTime = date.ToDateTime(slotEnd);
-                    // Check if slot overlaps with existing appointments
-                    var isAvailable = !existingAppointments.Any(apt =>
-                        slotStartDateTime < apt.EndDateTime && slotEndDateTime > apt.StartDateTime);
-                    if (isAvailable)
+                    slots.Add(new TimeSlotDto
                     {
-                        slots.Add(new TimeSlotDto
-                        {
-                            StartTime = slotStart,
-                            EndTime = slotEnd,
-                            DurationMinutes = 30
-                        });
-                    }
-                    currentTime = currentTime.AddMinutes(30);
+                        StartTime = tpl.StartTime,
+                        EndTime = tpl.EndTime,
+                        DurationMinutes = tpl.DurationMinutes
+                    });
                 }
             }
-            
+
             return new AvailabilityDto
             {
                 ExpertId = expertId,
@@ -397,5 +400,73 @@ namespace HealthLink.Api.Services
             };
         }
 
+        public async Task<ExpertDashboardResponse> GetExpertDashboardAsync(long userId)
+        {
+            var expert = await _db.Experts.FirstOrDefaultAsync(x => x.UserId == userId);
+            if (expert == null)
+                throw new BusinessException(ErrorCodes.EXPERT_NOT_FOUND, "Expert not found", 404);
+
+            var today = DateTime.SpecifyKind(DateTime.Now.Date, DateTimeKind.Utc);
+            var tomorrow = today.AddDays(1);
+
+            var todayAppointmentsCount = await _db.Appointments.CountAsync(x =>
+                x.ExpertId == expert.Id &&
+                x.Status == Entities.Enums.AppointmentStatus.Scheduled &&
+                x.StartDateTime >= today &&
+                x.StartDateTime < tomorrow);
+
+            var totalClientsCount = await _db.Appointments
+                .Where(x => x.ExpertId == expert.Id)
+                .Select(x => x.ClientId)
+                .Distinct()
+                .CountAsync();
+
+            var completedSessionsCount = await _db.Appointments.CountAsync(x =>
+                x.ExpertId == expert.Id &&
+                x.Status == Entities.Enums.AppointmentStatus.Completed);
+
+            var unreadMessagesCount = await (
+                from msg in _db.Messages
+                join conv in _db.Conversations on msg.ConversationId equals conv.Id
+                where msg.IsRead == false && conv.ExpertId == expert.Id
+                select msg
+            ).CountAsync();
+
+            return new ExpertDashboardResponse
+            {
+                TodayAppointmentsCount = todayAppointmentsCount,
+                TotalClientsCount = totalClientsCount,
+                CompletedSessionsCount = completedSessionsCount,
+                UnreadMessagesCount = unreadMessagesCount
+            };
+        }
+
+        public async Task<IReadOnlyList<ExpertClientDto>> GetExpertClientsAsync(long userId)
+        {
+            var expert = await _db.Experts.FirstOrDefaultAsync(x => x.UserId == userId);
+            if (expert == null)
+                throw new BusinessException(ErrorCodes.EXPERT_NOT_FOUND, "Expert not found", 404);
+
+            var appointments = await _db.Appointments
+                .Include(a => a.Client)
+                    .ThenInclude(c => c.User)
+                .Where(a => a.ExpertId == expert.Id)
+                .ToListAsync();
+
+            var grouped = appointments
+                .GroupBy(a => a.ClientId)
+                .Select(g => new ExpertClientDto
+                {
+                    ClientId = g.Key,
+                    FullName = $"{g.First().Client.FirstName} {g.First().Client.LastName}",
+                    Email = g.First().Client.User?.Email,
+                    TotalAppointments = g.Count(),
+                    CompletedAppointments = g.Count(a => a.Status == Entities.Enums.AppointmentStatus.Completed),
+                    LastAppointmentDate = g.Max(a => a.StartDateTime)
+                })
+                .ToList();
+
+            return grouped;
+        }
     }
 }

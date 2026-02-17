@@ -46,6 +46,7 @@ public class AdminServicePackagesController : BaseAuthenticatedController
             Description = p.Description,
             ExpertType = p.ExpertType,
             SessionCount = p.SessionCount,
+            ValidityDays = p.ValidityDays,
             Price = p.Price,
             IsActive = p.IsActive,
             CreatedAt = p.CreatedAt,
@@ -71,6 +72,7 @@ public class AdminServicePackagesController : BaseAuthenticatedController
             Description = package.Description,
             ExpertType = package.ExpertType,
             SessionCount = package.SessionCount,
+            ValidityDays = package.ValidityDays,
             Price = package.Price,
             IsActive = package.IsActive,
             CreatedAt = package.CreatedAt,
@@ -89,6 +91,7 @@ public class AdminServicePackagesController : BaseAuthenticatedController
             Description = request.Description,
             ExpertType = request.ExpertType,
             SessionCount = request.SessionCount,
+            ValidityDays = request.ValidityDays,
             Price = request.Price,
             IsActive = request.IsActive,
             CreatedAt = DateTime.UtcNow
@@ -104,6 +107,7 @@ public class AdminServicePackagesController : BaseAuthenticatedController
             Description = package.Description,
             ExpertType = package.ExpertType,
             SessionCount = package.SessionCount,
+            ValidityDays = package.ValidityDays,
             Price = package.Price,
             IsActive = package.IsActive,
             CreatedAt = package.CreatedAt,
@@ -126,6 +130,7 @@ public class AdminServicePackagesController : BaseAuthenticatedController
         if (request.Description != null) package.Description = request.Description;
         if (request.ExpertType.HasValue) package.ExpertType = request.ExpertType.Value;
         if (request.SessionCount.HasValue) package.SessionCount = request.SessionCount.Value;
+        if (request.ValidityDays.HasValue) package.ValidityDays = request.ValidityDays.Value;
         if (request.Price.HasValue) package.Price = request.Price.Value;
         if (request.IsActive.HasValue) package.IsActive = request.IsActive.Value;
 
@@ -140,6 +145,7 @@ public class AdminServicePackagesController : BaseAuthenticatedController
             Description = package.Description,
             ExpertType = package.ExpertType,
             SessionCount = package.SessionCount,
+            ValidityDays = package.ValidityDays,
             Price = package.Price,
             IsActive = package.IsActive,
             CreatedAt = package.CreatedAt,

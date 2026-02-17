@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Container,
     Typography,
@@ -84,6 +84,8 @@ export default function AdminExpertsPage() {
     const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
     const [filterActive, setFilterActive] = useState<string>('');
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
     // Edit dialog
     const [editDialog, setEditDialog] = useState(false);
     const [editForm, setEditForm] = useState({
@@ -97,16 +99,24 @@ export default function AdminExpertsPage() {
     });
     const [saving, setSaving] = useState(false);
 
+    const handleSearchChange = useCallback((value: string) => {
+        setSearch(value);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(() => {
+            setDebouncedSearch(value);
+        }, 400);
+    }, []);
+
     useEffect(() => {
         fetchExperts();
-    }, [filterActive, search]);
+    }, [filterActive, debouncedSearch]);
 
     const fetchExperts = async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
             if (filterActive) params.append('isActive', filterActive);
-            if (search) params.append('search', search);
+            if (debouncedSearch) params.append('search', debouncedSearch);
             const response = await api.get(`/api/experts/admin/all?${params}`);
             setExperts(response.data.items || response.data || []);
             setError(null);
@@ -229,7 +239,7 @@ export default function AdminExpertsPage() {
         }
     };
 
-    if (loading) {
+    if (loading && experts.length === 0) {
         return (
             <Container maxWidth="xl">
                 <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -254,7 +264,7 @@ export default function AdminExpertsPage() {
                 <TextField
                     label="Ara (İsim, Email)"
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     sx={{ minWidth: 300 }}
                 />
                 <FormControl sx={{ minWidth: 150 }}>

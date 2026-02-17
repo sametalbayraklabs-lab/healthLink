@@ -1,4 +1,5 @@
-﻿using HealthLink.Api.Entities.Enums;
+﻿using System.ComponentModel.DataAnnotations;
+using HealthLink.Api.Entities.Enums;
 
 namespace HealthLink.Api.Entities
 {
@@ -21,7 +22,18 @@ namespace HealthLink.Api.Entities
 
         public DateTime EndDateTime { get; set; }
 
-        public string? ZoomLink { get; set; }
+        // Daily.co video fields
+        [MaxLength(100)]
+        public string? DailyRoomName { get; set; }     // Daily.co room name (e.g. "hl-appt-42")
+
+        [MaxLength(500)]
+        public string? MeetingUrl { get; set; }        // Daily.co full URL
+
+        [MaxLength(500)]
+        public string? RecordingUrl { get; set; }      // Recording URL (future use)
+
+        [MaxLength(30)]
+        public string? RecordingStatus { get; set; }   // Recording status (future use)
 
         public AppointmentStatus Status { get; set; }  // Enum (stored as int)
 

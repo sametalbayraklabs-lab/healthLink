@@ -97,7 +97,7 @@ public class AdminAppointmentsController : BaseAuthenticatedController
             ServiceType = appointment.ServiceType,
             StartDateTime = appointment.StartDateTime,
             EndDateTime = appointment.EndDateTime,
-            ZoomLink = appointment.ZoomLink,
+            MeetingUrl = appointment.MeetingUrl,
             Status = appointment.Status,
             CreatedAt = appointment.CreatedAt,
             UpdatedAt = appointment.UpdatedAt

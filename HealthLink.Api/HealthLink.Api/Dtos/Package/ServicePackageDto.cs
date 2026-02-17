@@ -7,6 +7,7 @@ public class ServicePackageDto
     public string? Description { get; set; }
     public string ExpertType { get; set; } = null!;
     public int SessionCount { get; set; }
+    public int ValidityDays { get; set; }
     public decimal Price { get; set; }
     public string Currency { get; set; } = "TRY";
     public bool IsActive { get; set; }

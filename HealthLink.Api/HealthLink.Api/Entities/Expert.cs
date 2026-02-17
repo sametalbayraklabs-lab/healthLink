@@ -12,6 +12,7 @@ namespace HealthLink.Api.Entities
 
         public string? DisplayName { get; set; }        // Max 150
         public string? Bio { get; set; }
+        public string? ProfileDescription { get; set; }  // Short description for cards (max 300)
         public string? ProfilePhotoUrl { get; set; }    // Profile photo path
         public string? IntroVideoUrl { get; set; }      // Introduction video path
         public string? City { get; set; }               // Max 100

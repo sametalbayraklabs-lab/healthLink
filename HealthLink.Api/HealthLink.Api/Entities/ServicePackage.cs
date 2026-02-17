@@ -14,6 +14,8 @@ namespace HealthLink.Api.Entities
 
         public int SessionCount { get; set; }
 
+        public int ValidityDays { get; set; } = 30;
+
         public decimal Price { get; set; }
 
         public string Currency { get; set; } = "TRY";

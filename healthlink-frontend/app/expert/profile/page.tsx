@@ -230,8 +230,17 @@ export default function ExpertProfilePage() {
                                         size="small"
                                     />
                                     <Chip
-                                        label={profile.status === 'Active' ? 'Aktif' : 'Pasif'}
-                                        color={profile.status === 'Active' ? 'success' : 'default'}
+                                        label={
+                                            profile.status === 'Approved' ? 'Aktif' :
+                                                profile.status === 'Pending' ? 'Onay Bekliyor' :
+                                                    profile.status === 'Suspended' ? 'Askıya Alındı' :
+                                                        profile.status === 'Rejected' ? 'Reddedildi' : 'Pasif'
+                                        }
+                                        color={
+                                            profile.status === 'Approved' ? 'success' :
+                                                profile.status === 'Pending' ? 'warning' :
+                                                    'error'
+                                        }
                                         size="small"
                                     />
                                 </Stack>
