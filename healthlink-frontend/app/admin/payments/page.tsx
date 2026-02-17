@@ -338,7 +338,7 @@ export default function AdminPaymentsPage() {
                     ) : selectedPayment && (
                         <Box mt={2}>
                             <Grid container spacing={3}>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Danışan</Typography>
                                     <Typography variant="body1" fontWeight="medium">
                                         {selectedPayment.clientName}
@@ -347,11 +347,11 @@ export default function AdminPaymentsPage() {
                                         {selectedPayment.clientEmail}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Paket</Typography>
                                     <Typography variant="body1">{selectedPayment.packageName}</Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Tutar</Typography>
                                     <Typography variant="h6" color="primary">
                                         {selectedPayment.amount.toLocaleString('tr-TR', {
@@ -360,7 +360,7 @@ export default function AdminPaymentsPage() {
                                         })} {selectedPayment.currency}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Durum</Typography>
                                     <Chip
                                         label={getStatusLabel(selectedPayment.status)}
@@ -368,30 +368,30 @@ export default function AdminPaymentsPage() {
                                         size="small"
                                     />
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Ödeme Yöntemi</Typography>
                                     <Typography variant="body1">{selectedPayment.paymentMethod}</Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Ödeme Altyapısı</Typography>
                                     <Typography variant="body1">{getGatewayLabel(selectedPayment.gateway)}</Typography>
                                 </Grid>
                                 {selectedPayment.gatewayPaymentId && (
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Typography variant="subtitle2" color="text.secondary">Ödeme İşlem ID</Typography>
                                         <Typography variant="body2" fontFamily="monospace">
                                             {selectedPayment.gatewayPaymentId}
                                         </Typography>
                                     </Grid>
                                 )}
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Oluşturulma Tarihi</Typography>
                                     <Typography variant="body1">
                                         {new Date(selectedPayment.createdAt).toLocaleString('tr-TR')}
                                     </Typography>
                                 </Grid>
                                 {selectedPayment.confirmedAt && (
-                                    <Grid item xs={12} md={6}>
+                                    <Grid size={{ xs: 12, md: 6 }}>
                                         <Typography variant="subtitle2" color="text.secondary">Onaylanma Tarihi</Typography>
                                         <Typography variant="body1">
                                             {new Date(selectedPayment.confirmedAt).toLocaleString('tr-TR')}
