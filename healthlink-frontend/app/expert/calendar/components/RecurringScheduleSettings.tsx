@@ -238,7 +238,7 @@ export default function RecurringScheduleSettings({ onError, onSuccess }: Props)
     }
 
     return (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
             <Typography variant="h6" gutterBottom fontWeight={600}>
                 Haftalık Çalışma Saatleri
             </Typography>

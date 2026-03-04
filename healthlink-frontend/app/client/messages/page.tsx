@@ -163,17 +163,37 @@ export default function ClientMessagesPage() {
 
     return (
         <Container maxWidth="lg">
-            <Typography variant="h4" gutterBottom fontWeight={600}>
-                Mesajlar
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-                Uzmanlarınızla mesajlaşın
-            </Typography>
+            <Box sx={{ mb: 3 }}>
+                <Typography variant="h4" gutterBottom fontWeight={700} sx={{ letterSpacing: '-0.01em' }}>
+                    Mesajlar
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                    Uzmanlarınızla mesajlaşın
+                </Typography>
+            </Box>
 
-            <Paper elevation={2} sx={{ display: 'flex', height: 'calc(100vh - 250px)', overflow: 'hidden', borderRadius: 2 }}>
+            <Paper
+                elevation={0}
+                sx={{
+                    display: 'flex',
+                    height: 'calc(100vh - 260px)',
+                    overflow: 'hidden',
+                    borderRadius: 4,
+                    border: '1px solid',
+                    borderColor: 'rgba(226, 232, 240, 0.7)',
+                    boxShadow: '0 1px 4px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04)',
+                }}
+            >
                 {/* Left — Conversation List */}
-                <Box sx={{ width: 320, borderRight: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
-                    <Box sx={{ p: 1.5 }}>
+                <Box sx={{
+                    width: 340,
+                    borderRight: '1px solid',
+                    borderColor: 'rgba(226, 232, 240, 0.7)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    bgcolor: 'rgba(248, 250, 252, 0.5)',
+                }}>
+                    <Box sx={{ p: 2 }}>
                         <TextField
                             fullWidth
                             size="small"
@@ -183,13 +203,19 @@ export default function ClientMessagesPage() {
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <SearchIcon fontSize="small" />
+                                        <SearchIcon fontSize="small" sx={{ color: 'text.disabled' }} />
                                     </InputAdornment>
                                 ),
                             }}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    bgcolor: 'white',
+                                    borderRadius: 3,
+                                },
+                            }}
                         />
                     </Box>
-                    <Divider />
+                    <Divider sx={{ borderColor: 'rgba(226, 232, 240, 0.5)' }} />
                     <Box sx={{ flex: 1, overflowY: 'auto' }}>
                         {loading ? (
                             <Box display="flex" justifyContent="center" py={4}><CircularProgress size={24} /></Box>
@@ -206,9 +232,36 @@ export default function ClientMessagesPage() {
                                         <ListItemButton
                                             selected={activeConversation?.id === conv.id}
                                             onClick={() => openConversation(conv)}
-                                            sx={{ py: 1.5 }}
+                                            sx={{
+                                                py: 1.5,
+                                                px: 2,
+                                                transition: 'all 0.15s ease',
+                                                borderLeft: '3px solid transparent',
+                                                ...(activeConversation?.id === conv.id ? {
+                                                    bgcolor: 'rgba(30, 143, 138, 0.06)',
+                                                    borderLeftColor: '#1E8F8A',
+                                                } : {}),
+                                                '&:hover': {
+                                                    bgcolor: 'rgba(30, 143, 138, 0.04)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    bgcolor: 'rgba(30, 143, 138, 0.06)',
+                                                    borderLeftColor: '#1E8F8A',
+                                                    '&:hover': {
+                                                        bgcolor: 'rgba(30, 143, 138, 0.08)',
+                                                    },
+                                                },
+                                            }}
                                         >
-                                            <Avatar sx={{ mr: 1.5, width: 40, height: 40, bgcolor: 'primary.light', fontSize: 16 }}>
+                                            <Avatar sx={{
+                                                mr: 1.5,
+                                                width: 42,
+                                                height: 42,
+                                                bgcolor: activeConversation?.id === conv.id ? '#1E8F8A' : '#CBD5E1',
+                                                fontSize: 16,
+                                                fontWeight: 600,
+                                                transition: 'background-color 0.2s ease',
+                                            }}>
                                                 {conv.otherPartyName?.charAt(0)?.toUpperCase()}
                                             </Avatar>
                                             <ListItemText
@@ -216,10 +269,10 @@ export default function ClientMessagesPage() {
                                                 secondaryTypographyProps={{ component: 'div' }}
                                                 primary={
                                                     <Box display="flex" justifyContent="space-between">
-                                                        <Typography variant="body2" fontWeight={conv.unreadCount > 0 ? 700 : 400} noWrap sx={{ maxWidth: 140 }}>
+                                                        <Typography variant="body2" fontWeight={conv.unreadCount > 0 ? 700 : 500} noWrap sx={{ maxWidth: 140, color: 'text.primary' }}>
                                                             {conv.otherPartyName}
                                                         </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
+                                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                                             {formatTime(conv.lastMessageAt)}
                                                         </Typography>
                                                     </Box>
@@ -229,12 +282,29 @@ export default function ClientMessagesPage() {
                                                         <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 180 }}>
                                                             {conv.lastMessage || 'Henüz mesaj yok'}
                                                         </Typography>
-                                                        {conv.unreadCount > 0 && <Badge badgeContent={conv.unreadCount} color="primary" sx={{ ml: 1 }} />}
+                                                        {conv.unreadCount > 0 && (
+                                                            <Box sx={{
+                                                                bgcolor: '#1E8F8A',
+                                                                color: 'white',
+                                                                borderRadius: '10px',
+                                                                minWidth: 20,
+                                                                height: 20,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '0.7rem',
+                                                                fontWeight: 700,
+                                                                px: 0.5,
+                                                                ml: 1,
+                                                            }}>
+                                                                {conv.unreadCount}
+                                                            </Box>
+                                                        )}
                                                     </Box>
                                                 }
                                             />
                                         </ListItemButton>
-                                        {idx < filteredConversations.length - 1 && <Divider />}
+                                        {idx < filteredConversations.length - 1 && <Divider sx={{ borderColor: 'rgba(226, 232, 240, 0.4)' }} />}
                                     </Box>
                                 ))}
                             </List>
@@ -243,7 +313,7 @@ export default function ClientMessagesPage() {
                 </Box>
 
                 {/* Right — Messages */}
-                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: 'white' }}>
                     {!activeConversation ? (
                         <Box display="flex" justifyContent="center" alignItems="center" flex={1}>
                             <Typography variant="body1" color="text.secondary">
@@ -253,14 +323,35 @@ export default function ClientMessagesPage() {
                     ) : (
                         <>
                             {/* Chat Header */}
-                            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'grey.50' }}>
+                            <Box sx={{
+                                px: 3,
+                                py: 2,
+                                borderBottom: '1px solid',
+                                borderColor: 'rgba(226, 232, 240, 0.7)',
+                                bgcolor: 'rgba(248, 250, 252, 0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1.5,
+                            }}>
+                                <Avatar sx={{ width: 36, height: 36, bgcolor: '#1E8F8A', fontSize: 14, fontWeight: 600 }}>
+                                    {activeConversation.otherPartyName?.charAt(0)?.toUpperCase()}
+                                </Avatar>
                                 <Typography variant="subtitle1" fontWeight={600}>
                                     {activeConversation.otherPartyName}
                                 </Typography>
                             </Box>
 
                             {/* Messages */}
-                            <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 1, display: 'flex', flexDirection: 'column', gap: 0.5, bgcolor: '#fafafa' }}>
+                            <Box sx={{
+                                flex: 1,
+                                overflowY: 'auto',
+                                px: 3,
+                                py: 2,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.75,
+                                bgcolor: '#FAFBFC',
+                            }}>
                                 {messages.length === 0 ? (
                                     <Box textAlign="center" py={4}>
                                         <Typography variant="body2" color="text.secondary">Henüz mesaj yok. İlk mesajı gönderin!</Typography>
@@ -269,13 +360,18 @@ export default function ClientMessagesPage() {
                                     messages.map((msg) => (
                                         <Box key={msg.id} sx={{ display: 'flex', justifyContent: msg.isMine ? 'flex-end' : 'flex-start', mb: 0.5 }}>
                                             <Box sx={{
-                                                maxWidth: '60%', px: 1.5, py: 0.8,
-                                                borderRadius: msg.isMine ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                                                bgcolor: msg.isMine ? 'primary.main' : 'white',
+                                                maxWidth: '60%',
+                                                px: 2,
+                                                py: 1,
+                                                borderRadius: msg.isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                                                bgcolor: msg.isMine ? '#1E8F8A' : 'white',
                                                 color: msg.isMine ? 'white' : 'text.primary',
-                                                boxShadow: 1,
+                                                boxShadow: msg.isMine
+                                                    ? '0 2px 8px rgba(30, 143, 138, 0.2)'
+                                                    : '0 1px 4px rgba(15, 23, 42, 0.06)',
+                                                border: msg.isMine ? 'none' : '1px solid rgba(226, 232, 240, 0.5)',
                                             }}>
-                                                <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>{msg.messageText}</Typography>
+                                                <Typography variant="body2" sx={{ wordBreak: 'break-word', lineHeight: 1.5 }}>{msg.messageText}</Typography>
                                                 <Typography variant="caption" sx={{ display: 'block', textAlign: 'right', mt: 0.3, opacity: 0.7, fontSize: '0.65rem' }}>
                                                     {formatTime(msg.createdAt)}
                                                 </Typography>
@@ -287,7 +383,14 @@ export default function ClientMessagesPage() {
                             </Box>
 
                             {/* Input */}
-                            <Box sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'divider', display: 'flex', gap: 1 }}>
+                            <Box sx={{
+                                p: 2,
+                                borderTop: '1px solid',
+                                borderColor: 'rgba(226, 232, 240, 0.7)',
+                                display: 'flex',
+                                gap: 1,
+                                bgcolor: 'white',
+                            }}>
                                 <TextField
                                     fullWidth
                                     size="small"
@@ -297,9 +400,32 @@ export default function ClientMessagesPage() {
                                     onKeyDown={handleKeyPress}
                                     multiline
                                     maxRows={3}
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: 3,
+                                        },
+                                    }}
                                 />
-                                <IconButton onClick={handleSend} disabled={!newMessage.trim() || sending} color="primary">
-                                    {sending ? <CircularProgress size={20} /> : <SendIcon />}
+                                <IconButton
+                                    onClick={handleSend}
+                                    disabled={!newMessage.trim() || sending}
+                                    sx={{
+                                        bgcolor: !newMessage.trim() || sending ? 'rgba(226, 232, 240, 0.5)' : '#1E8F8A',
+                                        color: !newMessage.trim() || sending ? 'text.disabled' : 'white',
+                                        borderRadius: 3,
+                                        width: 42,
+                                        height: 42,
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            bgcolor: '#166E6A',
+                                        },
+                                        '&.Mui-disabled': {
+                                            bgcolor: 'rgba(226, 232, 240, 0.5)',
+                                            color: 'text.disabled',
+                                        },
+                                    }}
+                                >
+                                    {sending ? <CircularProgress size={20} sx={{ color: 'inherit' }} /> : <SendIcon sx={{ fontSize: 20 }} />}
                                 </IconButton>
                             </Box>
                         </>

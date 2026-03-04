@@ -17,6 +17,9 @@ namespace HealthLink.Api.Entities
         public string? IntroVideoUrl { get; set; }      // Introduction video path
         public string? City { get; set; }               // Max 100
 
+        public string? Education { get; set; }           // Free-text education info
+        public string? Certificates { get; set; }        // Free-text certificates info
+
         public WorkType? WorkType { get; set; }         // Nullable enum (stored as int)
         public DateOnly? ExperienceStartDate { get; set; }
 
@@ -24,6 +27,7 @@ namespace HealthLink.Api.Entities
         public int TotalReviewCount { get; set; } = 0;  // Default 0
 
         public bool IsActive { get; set; } = true;
+        public bool IsManuallyOffline { get; set; } = false;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

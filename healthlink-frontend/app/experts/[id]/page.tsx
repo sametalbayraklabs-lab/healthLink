@@ -14,26 +14,55 @@ import {
     Rating,
     Divider,
     CircularProgress,
-    Paper,
-    TextField,
-    MenuItem,
     Stack,
+    Snackbar,
+    Alert,
 } from '@mui/material';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import WorkIcon from '@mui/icons-material/Work';
+import { useAuth } from '@/contexts/AuthContext';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import StarIcon from '@mui/icons-material/Star';
 import MessageIcon from '@mui/icons-material/Message';
-import dayjs, { Dayjs } from 'dayjs';
-import 'dayjs/locale/tr';
-import TurkishDateCalendar from '@/app/shared/TurkishDateCalendar';
+import SchoolIcon from '@mui/icons-material/School';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import PersonIcon from '@mui/icons-material/Person';
+import ComputerIcon from '@mui/icons-material/Computer';
 
-dayjs.locale('tr');
+/* ─── Design tokens ─── */
+const tokens = {
+    bg: '#F8FAFC',
+    cardRadius: '16px',
+    shadow: '0 1px 8px rgba(0,0,0,0.04)',
+    shadowHover: '0 2px 12px rgba(0,0,0,0.06)',
+};
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
+/* ─── Expert type labels ─── */
+const expertTypeLabels: Record<string, string> = {
+    Psychologist: 'Psikolog',
+    Dietitian: 'Diyetisyen',
+    SportsCoach: 'Spor Koçu',
+    Physiotherapist: 'Fizyoterapist',
+};
 
+const expertServiceLabels: Record<string, string> = {
+    Psychologist: 'Online Psikolojik Danışmanlık',
+    Dietitian: 'Online Beslenme Danışmanlığı',
+    SportsCoach: 'Online Spor Koçluğu',
+    Physiotherapist: 'Online Fizyoterapi',
+};
+
+/* ─── YouTube URL → embed ID parser ─── */
+function getYouTubeId(url: string | undefined | null): string | null {
+    if (!url) return null;
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+    return match?.[1] ?? null;
+}
+
+/* ═══════════ Reviews Sub-Component ═══════════ */
 interface ReviewItem {
     id: number;
     rating: number;
@@ -63,7 +92,7 @@ function ExpertReviews({ expertId }: { expertId: number }) {
 
     if (loading) {
         return (
-            <Box display="flex" justifyContent="center" py={2}>
+            <Box display="flex" justifyContent="center" py={3}>
                 <CircularProgress size={24} />
             </Box>
         );
@@ -71,42 +100,43 @@ function ExpertReviews({ expertId }: { expertId: number }) {
 
     if (reviews.length === 0) {
         return (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
                 Henüz değerlendirme bulunmamaktadır.
             </Typography>
         );
     }
 
     return (
-        <Stack spacing={2}>
+        <Stack spacing={1.5}>
             {reviews.map((review) => (
-                <Paper key={review.id} variant="outlined" sx={{ p: 2 }}>
-                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <Box
+                    key={review.id}
+                    sx={{
+                        p: 2,
+                        borderRadius: '12px',
+                        bgcolor: tokens.bg,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                    }}
+                >
+                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
                         <Rating value={review.rating} readOnly size="small" />
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary">
                             {new Date(review.createdAt).toLocaleDateString('tr-TR')}
                         </Typography>
                     </Box>
                     {review.comment && (
-                        <Typography variant="body2">
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                             {review.comment}
                         </Typography>
                     )}
-                </Paper>
+                </Box>
             ))}
         </Stack>
     );
 }
 
-const getServiceType = (expertType: string) => {
-    switch (expertType) {
-        case 'Dietitian': return 'NutritionSession';
-        case 'Psychologist': return 'TherapySession';
-        case 'SportsCoach': return 'TrainingSession';
-        default: return 'TherapySession';
-    }
-};
-
+/* ═══════════ Types ═══════════ */
 interface ExpertProfile {
     id: number;
     displayName: string;
@@ -114,7 +144,11 @@ interface ExpertProfile {
     phone: string;
     expertType: string;
     title: string;
+    profilePhotoUrl?: string;
+    introVideoUrl?: string;
     bio: string;
+    education?: string;
+    certificates?: string;
     city: string;
     workType: string;
     averageRating: number;
@@ -127,64 +161,56 @@ interface ExpertProfile {
     }>;
 }
 
-interface TimeSlot {
-    startTime: string;
-    endTime: string;
-    durationMinutes: number;
+/* ═══════════ Section Card Helper ═══════════ */
+function SectionCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+    return (
+        <Card sx={{
+            borderRadius: tokens.cardRadius,
+            boxShadow: tokens.shadow,
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'visible',
+        }}>
+            <CardContent sx={{ p: 3 }}>
+                <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                    {icon}
+                    <Typography variant="subtitle1" fontWeight={700}>{title}</Typography>
+                </Stack>
+                {children}
+            </CardContent>
+        </Card>
+    );
 }
 
-interface Availability {
-    expertId: number;
-    date: string;
-    availableSlots: TimeSlot[];
-}
-
+/* ═══════════ Main Page ═══════════ */
 export default function ExpertProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
+    const { user } = useAuth();
     const [expert, setExpert] = useState<ExpertProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [appointmentWarning, setAppointmentWarning] = useState(false);
+    const [messageWarning, setMessageWarning] = useState(false);
 
-    const searchParams = useSearchParams();
+    const handleAppointmentClick = () => {
+        if (user?.roles.includes('Client') || !user) {
+            router.push(`/client/appointments/new?expertId=${expert?.id}`);
+        } else {
+            setAppointmentWarning(true);
+        }
+    };
 
-    // Appointment booking states
-    const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
-    const [availability, setAvailability] = useState<Availability | null>(null);
-    const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
-    const [myPackages, setMyPackages] = useState<any[]>([]);
-    const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
-    const [loadingAvailability, setLoadingAvailability] = useState(false);
+    const handleMessageClick = () => {
+        if (user?.roles.includes('Client') || !user) {
+            router.push(`/client/messages?expertId=${expert?.id}`);
+        } else {
+            setMessageWarning(true);
+        }
+    };
 
     useEffect(() => {
         fetchExpert();
-        fetchMyPackages();
     }, [resolvedParams.id]);
-
-    // Restore date/slot from query params (after returning from package purchase)
-    useEffect(() => {
-        const dateParam = searchParams.get('date');
-        const slotParam = searchParams.get('slot');
-        if (dateParam) {
-            const restoredDate = dayjs(dateParam);
-            setSelectedDate(restoredDate);
-            handleDateChange(restoredDate).then(() => {
-                if (slotParam) {
-                    // Will be set after availability loads
-                    const checkSlot = setInterval(() => {
-                        setAvailability(prev => {
-                            if (prev && prev.availableSlots.length > 0) {
-                                const matchingSlot = prev.availableSlots.find(s => s.startTime === slotParam);
-                                if (matchingSlot) setSelectedSlot(matchingSlot);
-                                clearInterval(checkSlot);
-                            }
-                            return prev;
-                        });
-                    }, 200);
-                    setTimeout(() => clearInterval(checkSlot), 5000);
-                }
-            });
-        }
-    }, [searchParams]);
 
     const fetchExpert = async () => {
         try {
@@ -195,99 +221,6 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
         } finally {
             setLoading(false);
         }
-    };
-
-    const fetchMyPackages = async () => {
-        try {
-            const response = await fetch(`${API_URL}/api/client-packages/me`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const activePackages = data.filter((pkg: any) => pkg.status === 'Active' && (pkg.totalSessions - pkg.usedSessions) > 0);
-                setMyPackages(activePackages);
-                // Auto-select if only 1 active package
-                if (activePackages.length === 1) {
-                    setSelectedPackage(activePackages[0].id);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching packages:', error);
-        }
-    };
-
-    const handleDateChange = async (date: Dayjs | null) => {
-        if (!date) return;
-
-        setSelectedDate(date);
-        setSelectedSlot(null);
-        setLoadingAvailability(true);
-
-        try {
-            const dateStr = date.format('YYYY-MM-DD');
-            const response = await fetch(
-                `${API_URL}/api/experts/${resolvedParams.id}/availability?date=${dateStr}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                    },
-                }
-            );
-
-            if (response.ok) {
-                const data = await response.json();
-                setAvailability(data);
-            }
-        } catch (error) {
-            console.error('Error fetching availability:', error);
-        } finally {
-            setLoadingAvailability(false);
-        }
-    };
-
-    const handleCreateAppointment = async () => {
-        if (!selectedDate || !selectedSlot || !selectedPackage) {
-            alert('Lütfen tüm alanları doldurun');
-            return;
-        }
-
-        try {
-            const startDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.startTime}`).format('YYYY-MM-DDTHH:mm:ss');
-            const endDateTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${selectedSlot.endTime}`).format('YYYY-MM-DDTHH:mm:ss');
-
-            const response = await fetch(`${API_URL}/api/appointments/${selectedPackage}/create`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                },
-                body: JSON.stringify({
-                    expertId: resolvedParams.id,
-                    clientPackageId: selectedPackage,
-                    serviceType: expert ? getServiceType(expert.expertType) : 'TherapySession',
-                    startDateTime,
-                    endDateTime,
-                }),
-            });
-
-            if (response.ok) {
-                alert('Randevu başarıyla oluşturuldu!');
-                router.push('/client/appointments');
-            } else {
-                const error = await response.json();
-                alert(`Hata: ${error.message || 'Randevu oluşturulamadı'}`);
-            }
-        } catch (error) {
-            console.error('Error creating appointment:', error);
-            alert('Bir hata oluştu');
-        }
-    };
-
-    const handleBookAppointment = () => {
-        router.push(`/client/appointments/new?expertId=${resolvedParams.id}`);
     };
 
     if (loading) {
@@ -312,219 +245,406 @@ export default function ExpertProfilePage({ params }: { params: Promise<{ id: st
         ? new Date().getFullYear() - new Date(expert.experienceStartDate).getFullYear()
         : 0;
 
+    const videoId = getYouTubeId(expert.introVideoUrl);
+    const serviceLabel = expertServiceLabels[expert.expertType] || 'Online Danışmanlık';
+    const typeLabel = expertTypeLabels[expert.expertType] || expert.expertType;
+
     return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            {/* Header Section */}
-            <Paper elevation={2} sx={{ p: 4, mb: 3 }}>
-                <Grid container spacing={3}>
-                    <Grid size={{ xs: 12, md: 8 }}>
-                        <Box display="flex" alignItems="center" gap={3}>
-                            <Avatar
-                                sx={{
-                                    width: 100,
-                                    height: 100,
-                                    bgcolor: 'primary.main',
-                                    fontSize: '2rem',
-                                }}
+        <>
+            <Box sx={{ bgcolor: tokens.bg, minHeight: '100vh' }}>
+                <Container maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
+
+                    {/* ═══════════ 1. HERO SECTION ═══════════ */}
+                    <Card sx={{
+                        mb: 3,
+                        borderRadius: tokens.cardRadius,
+                        boxShadow: tokens.shadow,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        overflow: 'visible',
+                    }}>
+                        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+                            <Grid container spacing={3} alignItems="center">
+                                {/* Left: Identity */}
+                                <Grid size={{ xs: 12, md: 8 }}>
+                                    <Box display="flex" gap={{ xs: 2, md: 3 }} alignItems="center" flexWrap={{ xs: 'wrap', sm: 'nowrap' }}>
+                                        <Avatar
+                                            src={expert.profilePhotoUrl ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107'}${expert.profilePhotoUrl}` : undefined}
+                                            sx={{
+                                                width: { xs: 80, md: 96 },
+                                                height: { xs: 80, md: 96 },
+                                                bgcolor: 'primary.main',
+                                                fontSize: '2rem',
+                                                border: '3px solid',
+                                                borderColor: 'primary.light',
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            {expert.displayName.charAt(0)}
+                                        </Avatar>
+                                        <Box>
+                                            <Typography variant="h5" fontWeight={700} sx={{ lineHeight: 1.3 }}>
+                                                {expert.displayName}
+                                            </Typography>
+
+                                            {/* Role badge + Online label */}
+                                            <Box sx={{ mt: 0.5, mb: 1 }}>
+                                                <Chip
+                                                    label={typeLabel}
+                                                    size="small"
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        bgcolor: '#F0F9F8',
+                                                        color: 'primary.main',
+                                                        border: '1px solid',
+                                                        borderColor: 'primary.light',
+                                                        borderRadius: '8px',
+                                                    }}
+                                                />
+                                            </Box>
+
+                                            {/* Rating */}
+                                            <Stack direction="row" spacing={1} alignItems="center">
+                                                <Rating
+                                                    value={expert.averageRating || 0}
+                                                    readOnly
+                                                    precision={0.5}
+                                                    size="small"
+                                                    icon={<StarIcon sx={{ color: '#faaf00', fontSize: 18 }} />}
+                                                    emptyIcon={<StarIcon sx={{ color: '#E2E8F0', fontSize: 18 }} />}
+                                                />
+                                                <Typography variant="body2" fontWeight={500} sx={{ color: '#475569' }}>
+                                                    {expert.averageRating ? expert.averageRating.toFixed(1) : '0.0'}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: '#94A3B8' }}>
+                                                    ({expert.totalReviews} değerlendirme)
+                                                </Typography>
+                                            </Stack>
+
+                                            {/* Experience badge */}
+                                            {experienceYears > 0 && (
+                                                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 1 }}>
+                                                    <AccessTimeIcon sx={{ fontSize: 16, color: '#64748B' }} />
+                                                    <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500 }}>
+                                                        {experienceYears} yıl deneyim
+                                                    </Typography>
+                                                </Stack>
+                                            )}
+                                        </Box>
+                                    </Box>
+                                </Grid>
+
+                                {/* Right: CTAs */}
+                                <Grid size={{ xs: 12, md: 4 }}>
+                                    <Stack spacing={1.5}>
+                                        <Button
+                                            variant="contained"
+                                            size="large"
+                                            fullWidth
+                                            startIcon={<CalendarMonthIcon />}
+                                            onClick={handleAppointmentClick}
+                                            sx={{
+                                                borderRadius: '12px',
+                                                textTransform: 'none',
+                                                fontWeight: 600,
+                                                py: 1.5,
+                                                boxShadow: '0 2px 8px rgba(14,165,164,0.2)',
+                                                '&:hover': { boxShadow: '0 4px 16px rgba(14,165,164,0.3)' },
+                                            }}
+                                        >
+                                            Randevu Al
+                                        </Button>
+                                        <Button
+                                            variant="outlined"
+                                            size="large"
+                                            fullWidth
+                                            startIcon={<MessageIcon />}
+                                            onClick={handleMessageClick}
+                                            sx={{
+                                                borderRadius: '12px',
+                                                textTransform: 'none',
+                                                fontWeight: 600,
+                                                py: 1.5,
+                                                borderColor: '#CBD5E1',
+                                                color: '#475569',
+                                                '&:hover': { borderColor: '#94A3B8', bgcolor: '#F8FAFC' },
+                                            }}
+                                        >
+                                            Mesaj Gönder
+                                        </Button>
+                                    </Stack>
+                                </Grid>
+                            </Grid>
+                        </CardContent>
+                    </Card>
+
+                    {/* ═══════════ 2. HAKKINDA + VIDEO (2-col) ═══════════ */}
+                    <Grid container spacing={3} sx={{ mb: 3 }}>
+                        {/* Left: Hakkında */}
+                        <Grid size={{ xs: 12, md: videoId ? 7 : 12 }}>
+                            <SectionCard
+                                icon={<PersonIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
+                                title="Hakkında"
                             >
-                                {expert.displayName.charAt(0)}
-                            </Avatar>
-                            <Box>
-                                <Typography variant="h4" fontWeight={600} gutterBottom>
-                                    {expert.displayName}
+                                <Typography variant="body1" sx={{ color: '#475569', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                                    {expert.bio || 'Henüz biyografi eklenmemiş.'}
                                 </Typography>
-                                <Typography variant="h6" color="text.secondary" gutterBottom>
-                                    {expert.title}
-                                </Typography>
-                                <Box display="flex" alignItems="center" gap={1} mt={1}>
-                                    <Rating value={expert.averageRating || 0} readOnly precision={0.5} />
-                                    <Typography variant="body2" color="text.secondary">
-                                        {expert.averageRating ? expert.averageRating.toFixed(1) : '0.0'} ({expert.totalReviews} değerlendirme)
-                                    </Typography>
+                            </SectionCard>
+                        </Grid>
+
+                        {/* Right: YouTube Video */}
+                        {videoId && (
+                            <Grid size={{ xs: 12, md: 5 }}>
+                                <Card sx={{
+                                    borderRadius: tokens.cardRadius,
+                                    boxShadow: tokens.shadow,
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                }}>
+                                    <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                                            <VideocamIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+                                            <Typography variant="subtitle1" fontWeight={700}>Tanıtım Videosu</Typography>
+                                        </Stack>
+                                        <Box sx={{
+                                            borderRadius: '12px',
+                                            overflow: 'hidden',
+                                            position: 'relative',
+                                            paddingTop: '56.25%',
+                                            flex: 1,
+                                        }}>
+                                            <iframe
+                                                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
+                                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                            />
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        )}
+                    </Grid>
+
+                    {/* ═══════════ 3. UZMANLIK ALANLARI ═══════════ */}
+                    <Box sx={{ mb: 3 }}>
+                        <SectionCard
+                            icon={<VerifiedIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
+                            title="Uzmanlık Alanları"
+                        >
+                            {expert.specializations.length > 0 ? (
+                                <Box display="flex" flexWrap="wrap" gap={1}>
+                                    {expert.specializations.map((spec) => (
+                                        <Chip
+                                            key={spec.id}
+                                            label={spec.name}
+                                            sx={{
+                                                fontWeight: 600,
+                                                borderRadius: '10px',
+                                                bgcolor: '#F0F9F8',
+                                                color: 'primary.main',
+                                                border: '1px solid',
+                                                borderColor: 'primary.light',
+                                                transition: 'all 0.2s',
+                                                '&:hover': { boxShadow: '0 2px 8px rgba(14,165,164,0.12)' },
+                                            }}
+                                        />
+                                    ))}
                                 </Box>
-                            </Box>
-                        </Box>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                        <Box display="flex" flexDirection="column" gap={2} height="100%" justifyContent="center">
-                            <Button
-                                variant="contained"
-                                size="large"
-                                fullWidth
-                                startIcon={<MessageIcon />}
-                                onClick={() => router.push(`/client/messages?expertId=${expert.id}`)}
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                    Henüz uzmanlık alanı eklenmemiş.
+                                </Typography>
+                            )}
+                        </SectionCard>
+                    </Box>
+
+                    {/* ═══════════ 4. DENEYİM + EĞİTİM (combined) ═══════════ */}
+                    <Grid container spacing={3} sx={{ mb: 3 }}>
+                        {/* Deneyim */}
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Card sx={{
+                                borderRadius: tokens.cardRadius,
+                                boxShadow: tokens.shadow,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                height: '100%',
+                            }}>
+                                <CardContent sx={{ p: 3 }}>
+                                    <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                                        <AccessTimeIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+                                        <Typography variant="subtitle1" fontWeight={700}>Deneyim</Typography>
+                                    </Stack>
+                                    <Box sx={{
+                                        display: 'flex', alignItems: 'center', gap: 2,
+                                        p: 2, borderRadius: '12px', bgcolor: '#F0F9F8',
+                                    }}>
+                                        <Box sx={{
+                                            width: 48, height: 48, borderRadius: '12px',
+                                            bgcolor: 'primary.main', display: 'flex',
+                                            alignItems: 'center', justifyContent: 'center', color: 'white',
+                                        }}>
+                                            <CalendarMonthIcon />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="h5" fontWeight={700} sx={{ color: 'primary.main' }}>
+                                                {experienceYears > 0 ? `${experienceYears} Yıl` : '—'}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Profesyonel Deneyim
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        {/* Eğitim */}
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <SectionCard
+                                icon={<SchoolIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
+                                title="Eğitim"
                             >
-                                Mesaj Gönder
-                            </Button>
-                        </Box>
+                                <Typography variant="body2" sx={{ color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                                    {expert.education || 'Henüz eğitim bilgisi eklenmemiş.'}
+                                </Typography>
+                            </SectionCard>
+                        </Grid>
                     </Grid>
-                </Grid>
-            </Paper>
 
-            <Grid container spacing={3}>
-                {/* Left Column - Details */}
-                <Grid size={{ xs: 12, md: 8 }}>
-                    {/* About Section */}
-                    <Card sx={{ mb: 3 }}>
-                        <CardContent>
-                            <Typography variant="h6" fontWeight={600} gutterBottom>
-                                Hakkında
+                    {/* ═══════════ 5. SERTİFİKALAR ═══════════ */}
+                    <Box sx={{ mb: 3 }}>
+                        <SectionCard
+                            icon={<WorkspacePremiumIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
+                            title="Sertifikalar"
+                        >
+                            <Typography variant="body2" sx={{ color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                                {expert.certificates || 'Henüz sertifika bilgisi eklenmemiş.'}
                             </Typography>
-                            <Typography variant="body1" color="text.secondary" paragraph>
-                                {expert.bio}
-                            </Typography>
-                        </CardContent>
-                    </Card>
+                        </SectionCard>
+                    </Box>
 
-                    {/* Specializations */}
-                    <Card sx={{ mb: 3 }}>
-                        <CardContent>
-                            <Typography variant="h6" fontWeight={600} gutterBottom>
-                                Uzmanlık Alanları
-                            </Typography>
-                            <Box display="flex" flexWrap="wrap" gap={1} mt={2}>
-                                {expert.specializations.map((spec) => (
-                                    <Chip
-                                        key={spec.id}
-                                        label={spec.name}
-                                        color="primary"
-                                        variant="outlined"
+                    {/* ═══════════ 6. DEĞERLENDİRMELER (scrollable) ═══════════ */}
+                    <Card sx={{
+                        mb: 3,
+                        borderRadius: tokens.cardRadius,
+                        boxShadow: tokens.shadow,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                    }}>
+                        <CardContent sx={{ p: 3 }}>
+                            <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                                <StarIcon sx={{ color: '#faaf00', fontSize: 22 }} />
+                                <Typography variant="subtitle1" fontWeight={700}>Değerlendirmeler</Typography>
+                            </Stack>
+
+                            {/* Rating summary — stays always visible */}
+                            <Box sx={{
+                                display: 'flex', alignItems: 'center', gap: 2,
+                                p: 2, borderRadius: '12px', bgcolor: '#F0F9F8',
+                                mb: 2,
+                            }}>
+                                <Typography variant="h3" fontWeight={800} sx={{ color: 'primary.main' }}>
+                                    {expert.averageRating ? expert.averageRating.toFixed(1) : '—'}
+                                </Typography>
+                                <Box>
+                                    <Rating
+                                        value={expert.averageRating || 0}
+                                        readOnly
+                                        precision={0.5}
+                                        size="small"
+                                        icon={<StarIcon sx={{ color: '#faaf00' }} />}
+                                        emptyIcon={<StarIcon sx={{ color: '#E2E8F0' }} />}
                                     />
-                                ))}
-                            </Box>
-                        </CardContent>
-                    </Card>
-
-                    {/* Reviews Section */}
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" fontWeight={600} gutterBottom>
-                                Değerlendirmeler
-                            </Typography>
-                            <Box display="flex" alignItems="center" gap={2} my={2}>
-                                <Box textAlign="center">
-                                    <Typography variant="h3" fontWeight={600}>
-                                        {expert.averageRating ? expert.averageRating.toFixed(1) : '0.0'}
-                                    </Typography>
-                                    <Rating value={expert.averageRating || 0} readOnly precision={0.5} />
                                     <Typography variant="body2" color="text.secondary">
                                         {expert.totalReviews} değerlendirme
                                     </Typography>
                                 </Box>
                             </Box>
-                            <Divider sx={{ my: 2 }} />
-                            <ExpertReviews expertId={expert.id} />
+
+                            <Divider sx={{ mb: 2 }} />
+
+                            {/* Scrollable reviews container */}
+                            <Box sx={{
+                                maxHeight: 440,
+                                overflowY: 'auto',
+                                pr: 0.5,
+                                '&::-webkit-scrollbar': { width: 6 },
+                                '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
+                                '&::-webkit-scrollbar-thumb': {
+                                    bgcolor: '#CBD5E1',
+                                    borderRadius: 3,
+                                    '&:hover': { bgcolor: '#94A3B8' },
+                                },
+                            }}>
+                                <ExpertReviews expertId={expert.id} />
+                            </Box>
                         </CardContent>
                     </Card>
-                </Grid>
 
-                {/* Right Column - Calendar & Appointment Booking */}
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" fontWeight={600} gutterBottom>
-                                Randevu Yönetimi
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" paragraph>
-                                Tarih ve saat seçerek randevu oluşturabilirsiniz
-                            </Typography>
-
-                            {/* Calendar */}
-                            <TurkishDateCalendar
-                                value={selectedDate}
-                                onChange={handleDateChange}
-                                minDate={dayjs()}
-                                sx={{ width: '100%' }}
-                            />
-
-                            {/* Time Slots */}
-                            {selectedDate && (
-                                <Box mt={2}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                        Müsait Saatler ({selectedDate.format('DD MMMM YYYY')}):
+                    {/* ═══════════ 7. SUBTLE BOTTOM CTA ═══════════ */}
+                    <Card sx={{
+                        borderRadius: tokens.cardRadius,
+                        boxShadow: tokens.shadow,
+                        border: '1px solid',
+                        borderColor: 'primary.light',
+                        background: 'linear-gradient(135deg, rgba(14,165,164,0.03), rgba(99,102,241,0.03))',
+                    }}>
+                        <CardContent sx={{ p: 3 }}>
+                            <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+                                <Box>
+                                    <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#334155' }}>
+                                        {expert.displayName} ile görüşmeye başlayın
                                     </Typography>
-
-                                    {loadingAvailability ? (
-                                        <Box display="flex" justifyContent="center" py={2}>
-                                            <CircularProgress size={24} />
-                                        </Box>
-                                    ) : availability && availability.availableSlots.length === 0 ? (
-                                        <Typography variant="body2" color="text.secondary">
-                                            Bu tarihte müsait saat bulunmamaktadır.
-                                        </Typography>
-                                    ) : availability ? (
-                                        <Box display="flex" flexWrap="wrap" gap={1} mt={1}>
-                                            {availability.availableSlots.map((slot, index) => (
-                                                <Button
-                                                    key={index}
-                                                    size="small"
-                                                    variant={selectedSlot === slot ? 'contained' : 'outlined'}
-                                                    onClick={() => setSelectedSlot(slot)}
-                                                >
-                                                    {slot.startTime}
-                                                </Button>
-                                            ))}
-                                        </Box>
-                                    ) : null}
+                                    <Typography variant="body2" sx={{ color: '#64748B' }}>
+                                        Uygun tarih ve saatleri görüntüleyerek randevunuzu oluşturabilirsiniz.
+                                    </Typography>
                                 </Box>
-                            )}
-
-                            {/* Package Selection & Booking */}
-                            {selectedSlot && (
-                                <Box mt={2}>
-                                    {myPackages.length > 0 ? (
-                                        <>
-                                            <TextField
-                                                select
-                                                fullWidth
-                                                size="small"
-                                                label="Paket Seçin"
-                                                value={selectedPackage || ''}
-                                                onChange={(e) => setSelectedPackage(Number(e.target.value))}
-                                            >
-                                                {myPackages.map((pkg: any) => (
-                                                    <MenuItem key={pkg.id} value={pkg.id}>
-                                                        {pkg.servicePackage.name} ({pkg.totalSessions - pkg.usedSessions} seans)
-                                                    </MenuItem>
-                                                ))}
-                                            </TextField>
-                                            {selectedPackage && (
-                                                <Button
-                                                    variant="contained"
-                                                    fullWidth
-                                                    sx={{ mt: 2 }}
-                                                    onClick={handleCreateAppointment}
-                                                >
-                                                    Randevu Oluştur
-                                                </Button>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <Box textAlign="center" py={2}>
-                                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                Randevu almak için aktif bir paketiniz olmalıdır.
-                                            </Typography>
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                onClick={() => {
-                                                    const params = new URLSearchParams();
-                                                    params.set('returnTo', `/experts/${resolvedParams.id}`);
-                                                    if (selectedDate) params.set('date', selectedDate.format('YYYY-MM-DD'));
-                                                    if (selectedSlot) params.set('slot', selectedSlot.startTime);
-                                                    router.push(`/client/packages?${params.toString()}`);
-                                                }}
-                                            >
-                                                Paket Satın Al
-                                            </Button>
-                                        </Box>
-                                    )}
-                                </Box>
-                            )}
+                                <Button
+                                    variant="contained"
+                                    startIcon={<CalendarMonthIcon />}
+                                    onClick={handleAppointmentClick}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        px: 4,
+                                        py: 1.25,
+                                        boxShadow: '0 2px 8px rgba(14,165,164,0.2)',
+                                        '&:hover': { boxShadow: '0 4px 16px rgba(14,165,164,0.3)' },
+                                    }}
+                                >
+                                    Randevu Al
+                                </Button>
+                            </Box>
                         </CardContent>
                     </Card>
-                </Grid>
-            </Grid>
-        </Container>
+                </Container>
+            </Box>
+
+            <Snackbar
+                open={appointmentWarning}
+                autoHideDuration={4000}
+                onClose={() => setAppointmentWarning(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setAppointmentWarning(false)} severity="warning" variant="filled" sx={{ borderRadius: 2 }}>
+                    Randevu oluşturabilmek için danışan olmalısınız.
+                </Alert>
+            </Snackbar>
+            <Snackbar
+                open={messageWarning}
+                autoHideDuration={4000}
+                onClose={() => setMessageWarning(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setMessageWarning(false)} severity="warning" variant="filled" sx={{ borderRadius: 2 }}>
+                    Uzmanlarla mesajlaşabilmek için danışan olmalısınız.
+                </Alert>
+            </Snackbar>
+        </>
     );
 }

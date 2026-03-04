@@ -14,4 +14,6 @@ public class UserInfoDto
     public List<string> Roles { get; set; } = new();
     public long? ClientId { get; set; }
     public long? ExpertId { get; set; }
+    public string? FirstName { get; set; }
+    public string? DisplayName { get; set; }
 }

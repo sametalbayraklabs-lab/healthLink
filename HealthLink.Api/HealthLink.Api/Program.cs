@@ -2,9 +2,12 @@
 using System.Text;
 
 using HealthLink.Api.Data;
+using HealthLink.Api.Hubs;
 using HealthLink.Api.Security;
 using HealthLink.Api.Services;
 using HealthLink.Api.Services.Interfaces;
+
+using Microsoft.AspNetCore.SignalR;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -67,14 +70,15 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// CORS
+// CORS — must use WithOrigins + AllowCredentials for SignalR WebSocket
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://healthlink.com.tr")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -95,15 +99,20 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDiscountCodeService, DiscountCodeService>();
 builder.Services.AddScoped<IIyzicoService, IyzicoService>();
 
-// API-3 Services (Review & Complaint)
+// API-3 Services (Review)
 builder.Services.AddScoped<IReviewService, ReviewService>();
-builder.Services.AddScoped<IComplaintService, ComplaintService>();
 
 // API-4 Services (Messaging)
 builder.Services.AddScoped<IMessagingService, MessagingService>();
 
 // API-5 Services (Content & Admin)
 builder.Services.AddScoped<IContentService, ContentService>();
+
+// API-6 Services (Client Notes)
+builder.Services.AddScoped<IClientNoteService, ClientNoteService>();
+
+// API-7 Services (Client Measurements)
+builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 
 // Existing services
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
@@ -114,6 +123,10 @@ builder.Services.AddHttpClient<IDailyService, DailyService>();
 
 // Background services
 builder.Services.AddHostedService<AppointmentAutoCompleteService>();
+
+// SignalR
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -146,6 +159,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             {
                 var token = context.Request.Headers["Authorization"].FirstOrDefault();
                 Console.WriteLine($"[JWT] Authorization header: {token}");
+
+                // SignalR WebSocket support: read token from query string
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chathub"))
+                {
+                    context.Token = accessToken;
+                }
+
                 return Task.CompletedTask;
             },
             OnAuthenticationFailed = context =>
@@ -177,6 +199,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Static files (profile photos etc.)
+app.UseStaticFiles();
+
 // CORS
 app.UseCors();
 
@@ -187,6 +212,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/chathub");
 
 // Seed database with test data
 using (var scope = app.Services.CreateScope())

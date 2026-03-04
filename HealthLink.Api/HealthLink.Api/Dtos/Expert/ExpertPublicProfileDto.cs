@@ -7,7 +7,11 @@ public class ExpertPublicProfileDto
     public string? DisplayName { get; set; }
     public string? Bio { get; set; }
     public string? ProfileDescription { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
+    public string? IntroVideoUrl { get; set; }
     public string? City { get; set; }
+    public string? Education { get; set; }
+    public string? Certificates { get; set; }
     public string? WorkType { get; set; }
     public DateOnly? ExperienceStartDate { get; set; }
     public decimal? AverageRating { get; set; }

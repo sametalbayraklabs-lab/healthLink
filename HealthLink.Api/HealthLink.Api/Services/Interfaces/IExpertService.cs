@@ -14,9 +14,11 @@ public interface IExpertService
         string? city,
         long? specializationId,
         string? sort,
+        bool? isOnline,
         int page = 1,
         int pageSize = 20);
     Task SetSpecializationsAsync(long userId, List<long> specializationIds);
+    Task SetOnlineStatusAsync(long userId, bool isOffline);
     Task<ExpertProfileDto> ApproveExpertAsync(long expertId, string? adminNote);
     Task<ExpertProfileDto> RejectExpertAsync(long expertId, string? adminNote);
     Task<PagedResult<ExpertListItemDto>> GetAllExpertsForAdminAsync(

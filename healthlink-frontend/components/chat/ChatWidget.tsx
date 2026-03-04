@@ -13,8 +13,8 @@ import {
     ListItemText,
     Avatar,
     Divider,
-    InputAdornment,
     CircularProgress,
+    InputAdornment,
 } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
@@ -42,11 +42,20 @@ interface Message {
     isRead: boolean;
     createdAt: string;
     isMine: boolean;
+    _tempId?: string; // For optimistic update sync
 }
 
 export default function ChatWidget() {
     const { user } = useAuth();
-    const { pendingTarget, clearPendingTarget } = useChat();
+    const {
+        pendingTarget, clearPendingTarget,
+        sendMessage: hubSendMessage,
+        markAsRead: hubMarkAsRead,
+        sendTyping: hubSendTyping,
+        onNewMessage, onMessageRead, onTyping,
+        isConnected,
+    } = useChat();
+
     const [open, setOpen] = useState(false);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
@@ -54,11 +63,20 @@ export default function ChatWidget() {
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
+    const [typingUserId, setTypingUserId] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const pollRef = useRef<NodeJS.Timeout | null>(null);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const activeConvRef = useRef<Conversation | null>(null);
+
+    // Keep ref in sync with state for use in callbacks
+    useEffect(() => {
+        activeConvRef.current = activeConversation;
+    }, [activeConversation]);
 
     const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
+    // ─── REST Fetchers (initial load & fallback) ───
     const fetchConversations = useCallback(async () => {
         try {
             const res = await api.get('/api/messages/conversations');
@@ -77,7 +95,67 @@ export default function ChatWidget() {
         }
     }, []);
 
-    // Handle pending target — when another page calls openChatWithExpert/openChatWithClient
+    // ─── SignalR Event Listeners ───
+    useEffect(() => {
+        // ReceiveMessage: incoming message from the other party
+        const unsubMsg = onNewMessage(async (msg) => {
+            // If this message belongs to the active conversation, add it to messages
+            if (activeConvRef.current && msg.conversationId === activeConvRef.current.id) {
+                setMessages(prev => {
+                    if (prev.some(m => m.id === msg.id)) return prev;
+                    return [...prev, msg];
+                });
+                // Auto mark as read since user is viewing this conversation
+                // IMPORTANT: await before fetching so server returns unreadCount=0
+                await hubMarkAsRead(msg.conversationId);
+                // Locally zero out badge for this conversation immediately
+                setConversations(prev =>
+                    prev.map(c =>
+                        c.id === msg.conversationId
+                            ? { ...c, unreadCount: 0, lastMessage: msg.messageText, lastMessageAt: msg.createdAt }
+                            : c
+                    )
+                );
+                return; // skip full re-fetch, we updated locally
+            }
+            // Message is for a different conversation — re-fetch to update badges
+            fetchConversations();
+        });
+
+        // MessageRead: other party read our messages
+        const unsubRead = onMessageRead((conversationId) => {
+            // Mark all messages in this conversation as read
+            setMessages(prev =>
+                prev.map(m =>
+                    m.conversationId === conversationId && m.isMine
+                        ? { ...m, isRead: true }
+                        : m
+                )
+            );
+            fetchConversations();
+        });
+
+        // UserTyping: other party is typing
+        const unsubTyping = onTyping((data) => {
+            if (activeConvRef.current && data.conversationId === activeConvRef.current.id) {
+                setTypingUserId(data.userId);
+                // Clear typing indicator after 2.5s
+                if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                typingTimeoutRef.current = setTimeout(() => {
+                    setTypingUserId(null);
+                }, 2500);
+            }
+        });
+
+        return () => {
+            unsubMsg();
+            unsubRead();
+            unsubTyping();
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        };
+    }, [onNewMessage, onMessageRead, onTyping, hubMarkAsRead, fetchConversations]);
+
+    // ─── Handle pending target (from other pages) ───
     useEffect(() => {
         if (!pendingTarget) return;
 
@@ -104,55 +182,133 @@ export default function ChatWidget() {
         startChat();
     }, [pendingTarget, clearPendingTarget, fetchConversations]);
 
-    // Poll conversations list
+    // ─── Load conversations on mount ───
     useEffect(() => {
         if (!user) return;
         fetchConversations();
-        const interval = setInterval(fetchConversations, 5000);
-        return () => clearInterval(interval);
     }, [user, fetchConversations]);
 
-    // Poll active conversation messages
+    // ─── Load messages when opening a conversation ───
     useEffect(() => {
-        if (pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-        }
         if (!activeConversation) return;
 
-        fetchMessages(activeConversation.id);
-        api.post(`/api/messages/conversations/${activeConversation.id}/read`).catch(() => { });
-
-        pollRef.current = setInterval(() => {
-            fetchMessages(activeConversation.id);
-        }, 3000);
-
-        return () => {
-            if (pollRef.current) clearInterval(pollRef.current);
+        const openConv = async () => {
+            await fetchMessages(activeConversation.id);
+            // Mark as read (uses SignalR with REST fallback)
+            await hubMarkAsRead(activeConversation.id);
+            // Locally zero out badge immediately
+            setConversations(prev =>
+                prev.map(c =>
+                    c.id === activeConversation.id ? { ...c, unreadCount: 0 } : c
+                )
+            );
         };
-    }, [activeConversation, fetchMessages]);
 
-    // Scroll to bottom on new messages
+        openConv();
+    }, [activeConversation, fetchMessages, hubMarkAsRead]);
+
+    // ─── Fallback polling (slow, only when SignalR is disconnected) ───
+    useEffect(() => {
+        if (isConnected || !user) return; // No polling when SignalR is active
+        const interval = setInterval(() => {
+            fetchConversations();
+            if (activeConvRef.current) {
+                fetchMessages(activeConvRef.current.id);
+            }
+        }, 8000);
+        return () => clearInterval(interval);
+    }, [isConnected, user, fetchConversations, fetchMessages]);
+
+    // ─── Scroll to bottom on new messages ───
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // ─── Send Message (optimistic update + hub) ───
     const handleSend = async () => {
         if (!newMessage.trim() || !activeConversation || sending) return;
         setSending(true);
+
+        const tempId = `temp_${Date.now()}`;
+        const optimisticMsg: Message = {
+            id: -1,
+            conversationId: activeConversation.id,
+            senderUserId: 0, // will be overwritten
+            messageText: newMessage.trim(),
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            isMine: true,
+            _tempId: tempId,
+        };
+
+        // Optimistic: show message immediately
+        setMessages(prev => [...prev, optimisticMsg]);
+        const text = newMessage.trim();
+        setNewMessage('');
+
         try {
-            await api.post('/api/messages/send', {
-                conversationId: activeConversation.id,
-                messageText: newMessage.trim(),
-            });
-            setNewMessage('');
-            await fetchMessages(activeConversation.id);
-            await fetchConversations();
+            // Try SignalR first, fall back to REST
+            let result = await hubSendMessage(activeConversation.id, text);
+
+            if (!result) {
+                // Fallback to REST if hub is not connected
+                const res = await api.post('/api/messages/send', {
+                    conversationId: activeConversation.id,
+                    messageText: text,
+                });
+                result = res.data;
+            }
+
+            if (result) {
+                // Replace optimistic message with real one (sync IDs)
+                setMessages(prev =>
+                    prev.map(m =>
+                        m._tempId === tempId
+                            ? { ...result!, isMine: true, _tempId: undefined }
+                            : m
+                    )
+                );
+            }
+
+            fetchConversations();
         } catch (err) {
             console.error('Failed to send message:', err);
+            // Remove optimistic message on failure
+            setMessages(prev => prev.filter(m => m._tempId !== tempId));
+            setNewMessage(text); // Restore the message
         } finally {
             setSending(false);
         }
+    };
+
+    // ─── Typing Indicator (debounced at 2s) ───
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setNewMessage(e.target.value);
+
+        if (!activeConversation) return;
+
+        // Debounce typing event: only send once every 2 seconds
+        if (!typingDebounceRef.current) {
+            // Determine the other user's ID
+            const otherUserId = getOtherUserId();
+            if (otherUserId) {
+                hubSendTyping(activeConversation.id, otherUserId);
+            }
+
+            typingDebounceRef.current = setTimeout(() => {
+                typingDebounceRef.current = null;
+            }, 2000);
+        }
+    };
+
+    // ─── Helper: Get other user's userId from conversation ───
+    const getOtherUserId = (): number | null => {
+        // This is used for typing events. We can't easily determine the other user's
+        // userId from conversation data (which has clientId/expertId, not userIds).
+        // As a workaround, we look at previous messages from the other party.
+        if (!activeConversation) return null;
+        const otherMsg = messages.find(m => !m.isMine);
+        return otherMsg?.senderUserId ?? null;
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -164,7 +320,6 @@ export default function ChatWidget() {
 
     const openConversation = (conv: Conversation) => {
         setActiveConversation(conv);
-        api.post(`/api/messages/conversations/${conv.id}/read`).catch(() => { });
     };
 
     const formatTime = (dateStr?: string) => {
@@ -244,13 +399,32 @@ export default function ChatWidget() {
                                     <ArrowBackIcon fontSize="small" />
                                 </IconButton>
                             )}
-                            <Typography variant="subtitle1" fontWeight={600}>
-                                {activeConversation ? activeConversation.otherPartyName : 'Mesajlar'}
-                            </Typography>
+                            <Box>
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                    {activeConversation ? activeConversation.otherPartyName : 'Mesajlar'}
+                                </Typography>
+                                {activeConversation && typingUserId && (
+                                    <Typography variant="caption" sx={{ opacity: 0.85, fontStyle: 'italic' }}>
+                                        Yazıyor...
+                                    </Typography>
+                                )}
+                            </Box>
                         </Box>
-                        <IconButton size="small" sx={{ color: 'white' }} onClick={() => setOpen(false)}>
-                            <CloseIcon fontSize="small" />
-                        </IconButton>
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                            {/* Connection indicator */}
+                            <Box
+                                sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    bgcolor: isConnected ? '#4CAF50' : '#FF9800',
+                                    mr: 0.5,
+                                }}
+                            />
+                            <IconButton size="small" sx={{ color: 'white' }} onClick={() => setOpen(false)}>
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
                     </Box>
 
                     {/* Content */}
@@ -352,9 +526,9 @@ export default function ChatWidget() {
                                         </Typography>
                                     </Box>
                                 ) : (
-                                    messages.map((msg) => (
+                                    messages.map((msg, idx) => (
                                         <Box
-                                            key={msg.id}
+                                            key={msg._tempId || msg.id || idx}
                                             sx={{
                                                 display: 'flex',
                                                 justifyContent: msg.isMine ? 'flex-end' : 'flex-start',
@@ -372,6 +546,7 @@ export default function ChatWidget() {
                                                     bgcolor: msg.isMine ? 'primary.main' : 'white',
                                                     color: msg.isMine ? 'white' : 'text.primary',
                                                     boxShadow: 1,
+                                                    opacity: msg._tempId ? 0.7 : 1, // Dim optimistic messages
                                                 }}
                                             >
                                                 <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
@@ -403,7 +578,7 @@ export default function ChatWidget() {
                                     size="small"
                                     placeholder="Mesajınızı yazın..."
                                     value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    onChange={handleInputChange}
                                     onKeyDown={handleKeyPress}
                                     multiline
                                     maxRows={3}
@@ -425,8 +600,9 @@ export default function ChatWidget() {
                             </Box>
                         </>
                     )}
-                </Paper>
-            )}
+                </Paper >
+            )
+            }
         </>
     );
 }

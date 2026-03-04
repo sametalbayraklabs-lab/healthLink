@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Container, Typography, Grid, Card, CardContent, Box, CircularProgress } from '@mui/material';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import PeopleIcon from '@mui/icons-material/People';
@@ -17,6 +18,7 @@ interface DashboardStats {
 }
 
 export default function ExpertDashboard() {
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
 
@@ -49,31 +51,35 @@ export default function ExpertDashboard() {
             value: dashboardData?.todayAppointmentsCount ?? 0,
             icon: <CalendarMonthIcon sx={{ fontSize: 40 }} />,
             color: 'primary.main',
+            href: '/expert/appointments',
         },
         {
             title: 'Toplam Danışan',
             value: dashboardData?.totalClientsCount ?? 0,
             icon: <PeopleIcon sx={{ fontSize: 40 }} />,
             color: 'secondary.main',
+            href: '/expert/clients',
         },
         {
             title: 'Tamamlanan Seanslar',
             value: dashboardData?.completedSessionsCount ?? 0,
             icon: <CheckCircleIcon sx={{ fontSize: 40 }} />,
             color: 'success.main',
+            href: '',
         },
         {
             title: 'Okunmamış Mesajlar',
             value: dashboardData?.unreadMessagesCount ?? 0,
             icon: <MessageIcon sx={{ fontSize: 40 }} />,
             color: 'warning.main',
+            href: '/expert/messages',
         },
     ];
 
     return (
         <Container maxWidth="lg">
             <Typography variant="h4" gutterBottom fontWeight={600}>
-                Uzman Dashboard
+                Panelim
             </Typography>
             <Typography variant="body1" color="text.secondary" paragraph>
                 Hoş geldiniz! İşte hesabınızın özeti.
@@ -87,7 +93,17 @@ export default function ExpertDashboard() {
                 <Grid container spacing={3} sx={{ mt: 2 }}>
                     {stats.map((stat, index) => (
                         <Grid key={index} xs={12} sm={6} md={3}>
-                            <Card>
+                            <Card
+                                sx={{
+                                    cursor: stat.href ? 'pointer' : 'default',
+                                    transition: 'transform 0.15s, box-shadow 0.15s',
+                                    '&:hover': stat.href ? {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: 4,
+                                    } : {},
+                                }}
+                                onClick={() => stat.href && router.push(stat.href)}
+                            >
                                 <CardContent>
                                     <Box display="flex" alignItems="center" justifyContent="space-between">
                                         <Box>

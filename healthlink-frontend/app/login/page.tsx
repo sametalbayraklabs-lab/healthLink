@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import BrandLogo from '@/components/BrandLogo';
 
 function LoginForm() {
     const router = useRouter();
@@ -50,11 +51,11 @@ function LoginForm() {
         >
             <Container maxWidth="sm">
                 <Paper elevation={3} sx={{ p: 4 }}>
-                    <Typography variant="h4" component="h1" gutterBottom align="center" fontWeight={600}>
-                        HealthLink
-                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+                        <BrandLogo size="lg" noLink showIcon />
+                    </Box>
                     <Typography variant="body1" color="text.secondary" align="center" mb={4}>
-                        Diyetisyen danışmanlık platformuna giriş yapın
+                        Sağlıklı yaşamın dijital platformuna giriş yapın
                     </Typography>
 
                     {error && (

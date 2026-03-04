@@ -1,10 +1,9 @@
 'use client';
 
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { Box, AppBar, Toolbar, Typography, Button, IconButton, Menu, MenuItem, Avatar } from '@mui/material';
-import { useState } from 'react';
+import { Box, AppBar, Toolbar, Button } from '@mui/material';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PersonIcon from '@mui/icons-material/Person';
@@ -12,30 +11,20 @@ import PeopleIcon from '@mui/icons-material/People';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MessageIcon from '@mui/icons-material/Message';
 import StarIcon from '@mui/icons-material/Star';
-import { getInitials } from '@/lib/utils';
-import ChatWidget from '@/components/chat/ChatWidget';
-import { ChatProvider } from '@/contexts/ChatContext';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import BrandLogo from '@/components/BrandLogo';
+import ExpertAvatarMenu from '@/components/avatar/ExpertAvatarMenu';
+
+const ACCENT = '#1E8F8A';
 
 export default function ExpertLayout({ children }: { children: React.ReactNode }) {
-    const { user, logout } = useAuth();
-    const router = useRouter();
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const { user } = useAuth();
+    const pathname = usePathname();
 
-    const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
-
-    const handleLogout = () => {
-        handleClose();
-        logout();
-    };
+    const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
 
     const menuItems = [
-        { label: 'Dashboard', path: '/expert/dashboard', icon: <DashboardIcon /> },
+        { label: 'Panelim', path: '/expert/dashboard', icon: <DashboardIcon /> },
         { label: 'Profilim', path: '/expert/profile', icon: <PersonIcon /> },
         { label: 'Takvim', path: '/expert/calendar', icon: <CalendarMonthIcon /> },
         { label: 'Danışanlarım', path: '/expert/clients', icon: <PeopleIcon /> },
@@ -46,58 +35,55 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
 
     return (
         <ProtectedRoute allowedRoles={['Expert']}>
-            <ChatProvider>
-                <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-                    <AppBar position="static" sx={{ bgcolor: 'secondary.main' }}>
-                        <Toolbar>
-                            <Typography variant="h6" component="div" sx={{ flexGrow: 0, mr: 4, fontWeight: 600 }}>
-                                HealthLink Expert
-                            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+                <AppBar
+                    position="sticky"
+                    sx={{
+                        bgcolor: 'rgba(255, 255, 255, 0.97)',
+                        backdropFilter: 'blur(12px)',
+                        color: 'text.primary',
+                        boxShadow: '0 1px 3px rgba(30, 143, 138, 0.08)',
+                        borderBottom: '1px solid #CCFBF1',
+                        borderTop: `3px solid ${ACCENT}`,
+                    }}
+                >
+                    <Toolbar sx={{ minHeight: { xs: 64, md: 68 } }}>
+                        <BrandLogo size="md" />
 
-                            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 1 }}>
-                                {menuItems.map((item) => (
-                                    <Button
-                                        key={item.path}
-                                        color="inherit"
-                                        component={Link}
-                                        href={item.path}
-                                        startIcon={item.icon}
-                                        sx={{ textTransform: 'none' }}
-                                    >
-                                        {item.label}
-                                    </Button>
-                                ))}
-                            </Box>
-
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
-                                    {user?.email}
-                                </Typography>
-                                <IconButton onClick={handleMenu} size="small">
-                                    <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                                        {user?.email ? getInitials(user.email.split('@')[0], '') : 'U'}
-                                    </Avatar>
-                                </IconButton>
-                                <Menu
-                                    anchorEl={anchorEl}
-                                    open={Boolean(anchorEl)}
-                                    onClose={handleClose}
+                        <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 0.5, ml: 2 }}>
+                            {menuItems.map((item) => (
+                                <Button
+                                    key={item.path}
+                                    component={Link}
+                                    href={item.path}
+                                    startIcon={item.icon}
+                                    sx={{
+                                        textTransform: 'none',
+                                        color: isActive(item.path) ? ACCENT : 'text.secondary',
+                                        fontWeight: isActive(item.path) ? 600 : 450,
+                                        borderRadius: 2,
+                                        px: 1.5,
+                                        '&:hover': {
+                                            bgcolor: `${ACCENT}0F`,
+                                            color: ACCENT,
+                                        },
+                                    }}
                                 >
-                                    <MenuItem onClick={() => { handleClose(); router.push('/expert/profile'); }}>
-                                        Profil
-                                    </MenuItem>
-                                    <MenuItem onClick={handleLogout}>Çıkış Yap</MenuItem>
-                                </Menu>
-                            </Box>
-                        </Toolbar>
-                    </AppBar>
+                                    {item.label}
+                                </Button>
+                            ))}
+                        </Box>
 
-                    <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}>
-                        {children}
-                    </Box>
-                    <ChatWidget />
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <ExpertAvatarMenu />
+                        </Box>
+                    </Toolbar>
+                </AppBar>
+
+                <Box component="main" sx={{ flex: 1, bgcolor: 'background.default', overflow: 'auto' }}>
+                    {children}
                 </Box>
-            </ChatProvider>
+            </Box>
         </ProtectedRoute>
     );
 }

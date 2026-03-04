@@ -246,13 +246,13 @@ export default function CalendarView({ onError, onSuccess }: Props) {
     const getSlotColor = (status: SlotStatus) => {
         switch (status) {
             case SlotStatus.Available:
-                return { border: 'success.main', bg: 'success.50', text: 'success.main', label: '✓ Müsait' };
+                return { border: '#10B981', bg: '#ECFDF5', text: '#059669', label: '✓ Müsait' };
             case SlotStatus.Booked:
-                return { border: 'error.main', bg: 'error.50', text: 'error.main', label: '✗ Dolu' };
+                return { border: '#EF4444', bg: '#FEF2F2', text: '#DC2626', label: '✗ Dolu' };
             case SlotStatus.ExceptionClosed:
-                return { border: 'warning.main', bg: 'warning.50', text: 'warning.main', label: '⚠ İstisna' };
+                return { border: '#F59E0B', bg: '#FFFBEB', text: '#D97706', label: '⚠ İstisna' };
             default:
-                return { border: 'divider', bg: 'grey.100', text: 'text.secondary', label: '— Kapalı' };
+                return { border: '#E2E8F0', bg: '#F1F5F9', text: '#94A3B8', label: '— Kapalı' };
         }
     };
 
@@ -262,7 +262,7 @@ export default function CalendarView({ onError, onSuccess }: Props) {
     const exceptionCount = timeSlots.filter(s => s.status === SlotStatus.ExceptionClosed).length;
 
     return (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <Typography variant="h5" gutterBottom fontWeight={600} sx={{ mb: 1 }}>
                 Müsaitlik Takvimi
             </Typography>
@@ -270,16 +270,18 @@ export default function CalendarView({ onError, onSuccess }: Props) {
                 Bir güne tıklayarak o gün için müsait olduğunuz saatleri belirleyin
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 3 }}>
+            <Box sx={{ display: 'flex', gap: 3, flex: 1, overflow: 'hidden' }}>
                 {/* Calendar Section */}
-                <Box sx={{ flex: '0 0 65%' }}>
+                <Box sx={{ flex: '0 0 60%', overflow: 'hidden' }}>
                     <Paper
                         elevation={0}
                         sx={{
                             p: 3,
-                            border: 1,
-                            borderColor: 'divider',
-                            borderRadius: 2
+                            border: '1px solid',
+                            borderColor: '#E2E8F0',
+                            borderRadius: '16px',
+                            height: '100%',
+                            boxShadow: '0 1px 8px rgba(0,0,0,0.04)',
                         }}
                     >
                         {/* Month Selector */}
@@ -346,32 +348,33 @@ export default function CalendarView({ onError, onSuccess }: Props) {
                                             <Box
                                                 onClick={() => handleDateClick(date)}
                                                 sx={{
-                                                    width: 50,
-                                                    height: 50,
+                                                    width: 46,
+                                                    height: 46,
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     borderRadius: '50%',
                                                     cursor: 'pointer',
-                                                    bgcolor: isToday(date)
+                                                    bgcolor: isSelected(date)
                                                         ? 'primary.main'
-                                                        : isSelected(date)
-                                                            ? 'primary.light'
+                                                        : isToday(date)
+                                                            ? '#F0F9F8'
                                                             : 'transparent',
-                                                    color: isToday(date)
+                                                    color: isSelected(date)
                                                         ? 'white'
-                                                        : isSelected(date)
+                                                        : isToday(date)
                                                             ? 'primary.main'
-                                                            : 'text.primary',
-                                                    fontWeight: isToday(date) || isSelected(date) ? 600 : 400,
-                                                    border: isSelected(date) && !isToday(date) ? 2 : 0,
+                                                            : '#334155',
+                                                    fontWeight: isToday(date) || isSelected(date) ? 700 : 400,
+                                                    border: isToday(date) && !isSelected(date) ? '2px solid' : 'none',
                                                     borderColor: 'primary.main',
-                                                    transition: 'all 0.2s',
+                                                    transition: 'all 0.2s ease',
+                                                    boxShadow: isSelected(date) ? '0 2px 8px rgba(14,165,164,0.3)' : 'none',
                                                     '&:hover': {
-                                                        bgcolor: isToday(date)
+                                                        bgcolor: isSelected(date)
                                                             ? 'primary.dark'
-                                                            : 'action.hover',
-                                                        transform: 'scale(1.05)'
+                                                            : 'rgba(14,165,164,0.08)',
+                                                        transform: 'scale(1.08)'
                                                     }
                                                 }}
                                             >
@@ -380,7 +383,7 @@ export default function CalendarView({ onError, onSuccess }: Props) {
                                                 </Typography>
                                             </Box>
                                         ) : (
-                                            <Box sx={{ width: 50, height: 50 }} />
+                                            <Box sx={{ width: 46, height: 46 }} />
                                         )}
                                     </Box>
                                 ))}
@@ -390,17 +393,19 @@ export default function CalendarView({ onError, onSuccess }: Props) {
                 </Box>
 
                 {/* Time Slots Panel */}
-                <Box sx={{ flex: '0 0 35%' }}>
+                <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     <Paper
                         elevation={0}
                         sx={{
                             p: 3,
-                            border: 1,
-                            borderColor: 'divider',
-                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: '#E2E8F0',
+                            borderRadius: '16px',
                             height: '100%',
                             display: 'flex',
-                            flexDirection: 'column'
+                            flexDirection: 'column',
+                            boxShadow: '0 1px 8px rgba(0,0,0,0.04)',
+                            overflow: 'hidden',
                         }}
                     >
                         <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
@@ -452,9 +457,11 @@ export default function CalendarView({ onError, onSuccess }: Props) {
                                 display: 'grid',
                                 gridTemplateColumns: 'repeat(4, 1fr)',
                                 gap: 0.75,
-                                maxHeight: 450,
+                                flex: 1,
                                 overflow: 'auto',
-                                pr: 0.5
+                                pr: 0.5,
+                                '&::-webkit-scrollbar': { width: 4 },
+                                '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1', borderRadius: 2 },
                             }}>
                                 {timeSlots.map((slot, index) => {
                                     const colors = getSlotColor(slot.status);
@@ -467,27 +474,27 @@ export default function CalendarView({ onError, onSuccess }: Props) {
                                             onClick={() => toggleTimeSlot(index)}
                                             sx={{
                                                 p: 0.75,
-                                                borderRadius: 1,
-                                                border: 1,
+                                                borderRadius: '8px',
+                                                border: '1px solid',
                                                 borderColor: colors.border,
                                                 bgcolor: colors.bg,
                                                 cursor: isDisabled ? 'not-allowed' : 'pointer',
                                                 textAlign: 'center',
-                                                transition: 'all 0.2s',
+                                                transition: 'all 0.2s ease',
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 minHeight: 42,
-                                                opacity: isDisabled ? 0.7 : 1,
+                                                opacity: isDisabled ? 0.6 : 1,
                                                 '&:hover': {
                                                     bgcolor: isDisabled
                                                         ? colors.bg
                                                         : slot.status === SlotStatus.Available
-                                                            ? 'success.200'
-                                                            : 'grey.200',
-                                                    transform: isDisabled ? 'none' : 'scale(1.02)',
-                                                    boxShadow: isDisabled ? 0 : 1
+                                                            ? '#D1FAE5'
+                                                            : '#E2E8F0',
+                                                    transform: isDisabled ? 'none' : 'scale(1.03)',
+                                                    boxShadow: isDisabled ? 'none' : '0 2px 6px rgba(0,0,0,0.06)'
                                                 }
                                             }}
                                         >

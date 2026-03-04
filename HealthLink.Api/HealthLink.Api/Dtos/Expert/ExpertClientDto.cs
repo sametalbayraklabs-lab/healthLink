@@ -8,4 +8,6 @@ public class ExpertClientDto
     public int TotalAppointments { get; set; }
     public int CompletedAppointments { get; set; }
     public DateTime? LastAppointmentDate { get; set; }
+    public DateTime? BirthDate { get; set; }
+    public string? Gender { get; set; }
 }

@@ -1,22 +1,26 @@
 'use client';
 
-import { AppBar, Toolbar, Typography, Button, Box, Container, Stack } from '@mui/material';
+import { AppBar, Toolbar, Button, Box, Stack } from '@mui/material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import ArticleIcon from '@mui/icons-material/Article';
+import ClientAvatarMenu from '@/components/avatar/ClientAvatarMenu';
+import ExpertAvatarMenu from '@/components/avatar/ExpertAvatarMenu';
+import AdminAvatarMenu from '@/components/avatar/AdminAvatarMenu';
+import BrandLogo from '@/components/BrandLogo';
 
 export default function Navbar() {
     const router = useRouter();
     const pathname = usePathname();
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
 
-    const getDashboardPath = () => {
-        if (!user) return '/login';
-        if (user.roles.includes('Admin')) return '/admin/dashboard';
-        if (user.roles.includes('Expert')) return '/expert/dashboard';
-        if (user.roles.includes('Client')) return '/client/dashboard';
-        return '/dashboard';
+    const renderAvatarMenu = () => {
+        if (!user) return null;
+        if (user.roles.includes('Admin')) return <AdminAvatarMenu />;
+        if (user.roles.includes('Expert')) return <ExpertAvatarMenu />;
+        if (user.roles.includes('Client')) return <ClientAvatarMenu />;
+        return null;
     };
 
     const navLinks = [
@@ -24,117 +28,93 @@ export default function Navbar() {
         { label: 'Makaleler', icon: <ArticleIcon />, path: '/articles' },
     ];
 
+    const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
+
     return (
         <AppBar
             position="sticky"
             sx={{
-                bgcolor: 'white',
+                bgcolor: 'rgba(255, 255, 255, 0.97)',
+                backdropFilter: 'blur(12px)',
                 color: 'text.primary',
-                boxShadow: 1
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                borderTop: '3px solid #1E8F8A',
             }}
         >
-            <Container maxWidth="lg">
-                <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
-                    {/* Logo/Brand */}
-                    <Typography
-                        variant="h6"
-                        component="div"
-                        onClick={() => router.push('/')}
-                        sx={{
-                            fontWeight: 700,
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            cursor: 'pointer',
-                            mr: 4
-                        }}
-                    >
-                        HealthLink
-                    </Typography>
+            <Toolbar
+                disableGutters
+                sx={{ justifyContent: 'space-between', minHeight: { xs: 64, md: 70 }, px: 3 }}
+            >
+                {/* Logo */}
+                <BrandLogo size="md" />
 
-                    {/* Left Navigation Links */}
-                    <Stack direction="row" spacing={2} sx={{ flexGrow: 1 }}>
-                        {navLinks.map((link) => (
+                {/* Center Nav Links */}
+                <Stack direction="row" spacing={0.5} sx={{ flexGrow: 1, ml: 3 }}>
+                    {navLinks.map((link) => (
+                        <Button
+                            key={link.path}
+                            startIcon={link.icon}
+                            onClick={() => router.push(link.path)}
+                            sx={{
+                                color: isActive(link.path) ? 'primary.main' : 'text.secondary',
+                                fontWeight: isActive(link.path) ? 600 : 450,
+                                textTransform: 'none',
+                                borderRadius: 2,
+                                px: 2,
+                                '&:hover': {
+                                    bgcolor: 'rgba(30, 143, 138, 0.06)',
+                                    color: 'primary.main',
+                                }
+                            }}
+                        >
+                            {link.label}
+                        </Button>
+                    ))}
+                </Stack>
+
+                {/* Right: Avatar or Login/Register */}
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                    {user ? (
+                        renderAvatarMenu()
+                    ) : (
+                        <>
                             <Button
-                                key={link.path}
-                                startIcon={link.icon}
-                                onClick={() => router.push(link.path)}
+                                variant="text"
+                                onClick={() => router.push('/login')}
                                 sx={{
-                                    color: pathname === link.path ? 'primary.main' : 'text.primary',
-                                    fontWeight: pathname === link.path ? 600 : 400,
+                                    color: 'text.secondary',
                                     textTransform: 'none',
+                                    fontWeight: 500,
                                     '&:hover': {
-                                        bgcolor: 'grey.100'
+                                        color: 'primary.main',
+                                        bgcolor: 'rgba(30, 143, 138, 0.06)',
                                     }
                                 }}
                             >
-                                {link.label}
+                                Giriş Yap
                             </Button>
-                        ))}
-                    </Stack>
-
-                    {/* Right Auth Buttons */}
-                    <Stack direction="row" spacing={2}>
-                        {user ? (
-                            <>
-                                <Button
-                                    variant="outlined"
-                                    onClick={() => router.push(getDashboardPath())}
-                                    sx={{
-                                        textTransform: 'none',
-                                        fontWeight: 500
-                                    }}
-                                >
-                                    Dashboard
-                                </Button>
-                                <Button
-                                    variant="text"
-                                    onClick={() => {
-                                        logout();
-                                        router.push('/');
-                                    }}
-                                    sx={{
-                                        color: 'text.primary',
-                                        textTransform: 'none',
-                                        fontWeight: 500
-                                    }}
-                                >
-                                    Çıkış Yap
-                                </Button>
-                            </>
-                        ) : (
-                            <>
-                                <Button
-                                    variant="text"
-                                    onClick={() => router.push('/login')}
-                                    sx={{
-                                        color: 'text.primary',
-                                        textTransform: 'none',
-                                        fontWeight: 500
-                                    }}
-                                >
-                                    Giriş Yap
-                                </Button>
-                                <Button
-                                    variant="contained"
-                                    onClick={() => router.push('/register/client')}
-                                    sx={{
-                                        textTransform: 'none',
-                                        fontWeight: 500,
-                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                        '&:hover': {
-                                            background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                                        }
-                                    }}
-                                >
-                                    Üye Ol
-                                </Button>
-                            </>
-                        )}
-                    </Stack>
-                </Toolbar>
-            </Container>
+                            <Button
+                                variant="contained"
+                                onClick={() => router.push('/register/client')}
+                                sx={{
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    bgcolor: 'primary.main',
+                                    boxShadow: '0 2px 8px rgba(30, 143, 138, 0.25)',
+                                    '&:hover': {
+                                        bgcolor: 'primary.dark',
+                                        boxShadow: '0 4px 16px rgba(30, 143, 138, 0.35)',
+                                    }
+                                }}
+                            >
+                                Üye Ol
+                            </Button>
+                        </>
+                    )}
+                </Stack>
+            </Toolbar>
         </AppBar>
     );
 }

@@ -1,21 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
-    Container,
     Typography,
     Box,
     Paper,
     Tabs,
     Tab,
-    CircularProgress,
     Alert
 } from '@mui/material';
 import RecurringScheduleSettings from './components/RecurringScheduleSettings';
 import TimeOffManager from './components/TimeOffManager';
 import CalendarView from './components/CalendarView';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -31,16 +28,16 @@ function TabPanel(props: TabPanelProps) {
             hidden={value !== index}
             id={`calendar-tabpanel-${index}`}
             aria-labelledby={`calendar-tab-${index}`}
+            style={{ flex: 1, display: value === index ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden' }}
             {...other}
         >
-            {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+            {value === index && <Box sx={{ flex: 1, overflow: 'hidden', pt: 1 }}>{children}</Box>}
         </div>
     );
 }
 
 export default function ExpertCalendarPage() {
     const [tabValue, setTabValue] = useState(0);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
@@ -51,34 +48,65 @@ export default function ExpertCalendarPage() {
     };
 
     return (
-        <Container maxWidth="lg">
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" gutterBottom fontWeight={600}>
-                    Takvim Yönetimi
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                    Çalışma saatlerinizi ve müsaitliğinizi yönetin
-                </Typography>
+        <Box sx={{
+            height: '100%',
+            display: 'flex', flexDirection: 'column',
+            bgcolor: '#F8FAFC', overflow: 'hidden',
+            px: { xs: 2, md: 3 }, py: 2,
+        }}>
+            {/* Header */}
+            <Box sx={{ mb: 2, flexShrink: 0 }}>
+                <Box display="flex" alignItems="center" gap={1.5} mb={0.5}>
+                    <Box sx={{
+                        width: 40, height: 40, borderRadius: '12px',
+                        bgcolor: 'primary.main', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', color: 'white',
+                    }}>
+                        <CalendarMonthIcon />
+                    </Box>
+                    <Box>
+                        <Typography variant="h5" fontWeight={700} sx={{ color: '#0F172A' }}>
+                            Takvim Yönetimi
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Çalışma saatlerinizi ve müsaitliğinizi yönetin
+                        </Typography>
+                    </Box>
+                </Box>
             </Box>
 
+            {/* Alerts */}
             {error && (
-                <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+                <Alert severity="error" sx={{ mb: 1.5, borderRadius: 2, flexShrink: 0 }} onClose={() => setError(null)}>
                     {error}
                 </Alert>
             )}
-
             {success && (
-                <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess(null)}>
+                <Alert severity="success" sx={{ mb: 1.5, borderRadius: 2, flexShrink: 0 }} onClose={() => setSuccess(null)}>
                     {success}
                 </Alert>
             )}
 
-            <Paper elevation={2}>
+            {/* Content area — fills remaining height */}
+            <Paper
+                elevation={0}
+                sx={{
+                    flex: 1, display: 'flex', flexDirection: 'column',
+                    borderRadius: '16px', overflow: 'hidden',
+                    border: '1px solid', borderColor: 'divider',
+                }}
+            >
                 <Tabs
                     value={tabValue}
                     onChange={handleTabChange}
                     aria-label="calendar tabs"
-                    sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+                    sx={{
+                        borderBottom: 1, borderColor: 'divider', px: 2, flexShrink: 0,
+                        '& .MuiTab-root': {
+                            textTransform: 'none', fontWeight: 600,
+                            fontSize: '0.9rem', minHeight: 48,
+                        },
+                    }}
                 >
                     <Tab label="Takvim Görünümü" />
                     <Tab label="Haftalık Çalışma Saatleri" />
@@ -86,26 +114,15 @@ export default function ExpertCalendarPage() {
                 </Tabs>
 
                 <TabPanel value={tabValue} index={0}>
-                    <CalendarView
-                        onError={setError}
-                        onSuccess={setSuccess}
-                    />
+                    <CalendarView onError={setError} onSuccess={setSuccess} />
                 </TabPanel>
-
                 <TabPanel value={tabValue} index={1}>
-                    <RecurringScheduleSettings
-                        onError={setError}
-                        onSuccess={setSuccess}
-                    />
+                    <RecurringScheduleSettings onError={setError} onSuccess={setSuccess} />
                 </TabPanel>
-
                 <TabPanel value={tabValue} index={2}>
-                    <TimeOffManager
-                        onError={setError}
-                        onSuccess={setSuccess}
-                    />
+                    <TimeOffManager onError={setError} onSuccess={setSuccess} />
                 </TabPanel>
             </Paper>
-        </Container>
+        </Box>
     );
 }

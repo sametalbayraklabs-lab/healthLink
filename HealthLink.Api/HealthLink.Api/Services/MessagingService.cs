@@ -3,7 +3,9 @@ using HealthLink.Api.Common.Errors;
 using HealthLink.Api.Data;
 using HealthLink.Api.Dtos.Messaging;
 using HealthLink.Api.Entities;
+using HealthLink.Api.Hubs;
 using HealthLink.Api.Services.Interfaces;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthLink.Api.Services;
@@ -11,8 +13,13 @@ namespace HealthLink.Api.Services;
 public class MessagingService : IMessagingService
 {
     private readonly AppDbContext _db;
+    private readonly IHubContext<ChatHub> _hub;
 
-    public MessagingService(AppDbContext db) => _db = db;
+    public MessagingService(AppDbContext db, IHubContext<ChatHub> hub)
+    {
+        _db = db;
+        _hub = hub;
+    }
 
     public async Task<List<ConversationDto>> GetMyConversationsAsync(long userId)
     {
@@ -120,7 +127,7 @@ public class MessagingService : IMessagingService
         conversation.LastMessageAt = message.CreatedAt;
         await _db.SaveChangesAsync();
 
-        return new MessageDto
+        var senderDto = new MessageDto
         {
             Id = message.Id,
             ConversationId = message.ConversationId,
@@ -130,6 +137,27 @@ public class MessagingService : IMessagingService
             CreatedAt = message.CreatedAt,
             IsMine = true
         };
+
+        // Broadcast to the receiver via SignalR
+        var receiverUserId = conversation.Client.UserId == userId
+            ? conversation.Expert.UserId
+            : conversation.Client.UserId;
+
+        var receiverDto = new MessageDto
+        {
+            Id = message.Id,
+            ConversationId = message.ConversationId,
+            SenderUserId = message.SenderUserId,
+            MessageText = message.MessageText,
+            IsRead = message.IsRead,
+            CreatedAt = message.CreatedAt,
+            IsMine = false
+        };
+
+        await _hub.Clients.User(receiverUserId.ToString())
+            .SendAsync("ReceiveMessage", receiverDto);
+
+        return senderDto;
     }
 
     public async Task MarkAsReadAsync(long userId, long conversationId)
@@ -155,6 +183,14 @@ public class MessagingService : IMessagingService
         }
 
         await _db.SaveChangesAsync();
+
+        // Notify the original sender(s) that their messages were read
+        if (messages.Count > 0)
+        {
+            var senderUserId = messages[0].SenderUserId;
+            await _hub.Clients.User(senderUserId.ToString())
+                .SendAsync("MessageRead", conversationId);
+        }
     }
 
     public async Task<ConversationDto> GetOrCreateConversationAsync(long clientUserId, long expertId)

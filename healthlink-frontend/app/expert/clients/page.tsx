@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     Container,
     Typography,
@@ -33,6 +34,7 @@ export default function ExpertClientsPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const { openChatWithClient } = useChat();
+    const router = useRouter();
 
     useEffect(() => {
         fetchClients();
@@ -90,18 +92,24 @@ export default function ExpertClientsPage() {
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {filteredClients.map((client) => (
-                    <Card key={client.clientId}>
+                    <Card
+                        key={client.clientId}
+                        sx={{
+                            cursor: 'pointer',
+                            transition: 'box-shadow 0.2s, transform 0.2s',
+                            '&:hover': {
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                transform: 'translateY(-1px)',
+                            },
+                        }}
+                        onClick={() => router.push(`/expert/clients/${client.clientId}`)}
+                    >
                         <CardContent>
                             <Box display="flex" justifyContent="space-between" alignItems="center">
                                 <Box>
                                     <Typography variant="h6" fontWeight={600}>
                                         {client.fullName}
                                     </Typography>
-                                    {client.email && (
-                                        <Typography variant="body2" color="text.secondary">
-                                            {client.email}
-                                        </Typography>
-                                    )}
                                     {client.lastAppointmentDate && (
                                         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                                             <strong>Son Randevu:</strong> {formatDateTime(client.lastAppointmentDate)}
@@ -125,7 +133,10 @@ export default function ExpertClientsPage() {
                                         size="small"
                                         variant="outlined"
                                         startIcon={<MessageIcon />}
-                                        onClick={() => openChatWithClient(client.clientId)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openChatWithClient(client.clientId);
+                                        }}
                                     >
                                         Mesaj Gönder
                                     </Button>
@@ -144,7 +155,8 @@ export default function ExpertClientsPage() {
                             : 'Aramanıza uygun danışan bulunamadı'}
                     </Typography>
                 </Box>
-            )}
-        </Container>
+            )
+            }
+        </Container >
     );
 }

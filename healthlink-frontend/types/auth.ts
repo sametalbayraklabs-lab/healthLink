@@ -31,6 +31,8 @@ export interface UserInfo {
     roles: string[];
     clientId?: number;
     expertId?: number;
+    firstName?: string;
+    displayName?: string;
 }
 
 export interface LoginResponse {

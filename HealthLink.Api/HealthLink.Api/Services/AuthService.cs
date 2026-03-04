@@ -274,7 +274,9 @@ public class AuthService : IAuthService
                 Email = user.Email,
                 Roles = roles,
                 ClientId = clientId,
-                ExpertId = expertId
+                ExpertId = expertId,
+                FirstName = client?.FirstName,
+                DisplayName = expert?.DisplayName
             }
         };
     }

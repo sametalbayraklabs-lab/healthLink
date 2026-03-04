@@ -1,8 +1,10 @@
 using HealthLink.Api.Common;
+using HealthLink.Api.Data;
 using HealthLink.Api.Dtos.Auth;
 using HealthLink.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthLink.Api.Controllers;
 
@@ -11,10 +13,12 @@ namespace HealthLink.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
+    private readonly AppDbContext _db;
 
-    public AuthController(IAuthService auth)
+    public AuthController(IAuthService auth, AppDbContext db)
     {
         _auth = auth;
+        _db = db;
     }
 
     [HttpPost("register-client")]
@@ -52,6 +56,20 @@ public class AuthController : ControllerBase
         var userId = UserHelper.GetUserId(User);
         await _auth.ChangePasswordAsync(userId, request);
         return Ok(new { success = true });
+    }
+
+    [HttpPost("heartbeat")]
+    [Authorize]
+    public async Task<ActionResult> Heartbeat()
+    {
+        var userId = UserHelper.GetUserId(User);
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user != null)
+        {
+            user.LastSeenAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+        return Ok();
     }
 }
 

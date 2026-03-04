@@ -52,6 +52,7 @@ namespace HealthLink.Api.Services
         {
             var expert = await _db.Experts
                 .Include(e => e.User)
+                .Include(e => e.ExpertSpecializations)
                 .FirstOrDefaultAsync(e => e.UserId == userId);
 
             if (expert == null)
@@ -65,14 +66,20 @@ namespace HealthLink.Api.Services
                 DisplayName = expert.DisplayName,
                 Bio = expert.Bio,
                 ProfileDescription = expert.ProfileDescription,
+                ProfilePhotoUrl = expert.ProfilePhotoUrl,
+                IntroVideoUrl = expert.IntroVideoUrl,
                 City = expert.City,
+                Education = expert.Education,
+                Certificates = expert.Certificates,
                 WorkType = expert.WorkType.ToApiString(),
                 ExperienceStartDate = expert.ExperienceStartDate,
                 Status = expert.Status.ToApiString(),
                 AverageRating = expert.AverageRating,
                 TotalReviewCount = expert.TotalReviewCount,
                 CreatedAt = expert.CreatedAt,
-                UpdatedAt = expert.UpdatedAt
+                UpdatedAt = expert.UpdatedAt,
+                IsManuallyOffline = expert.IsManuallyOffline,
+                SpecializationIds = expert.ExpertSpecializations.Select(es => es.SpecializationId).ToList()
             };
         }
 
@@ -86,8 +93,11 @@ namespace HealthLink.Api.Services
             expert.Bio = request.Bio;
             expert.ProfileDescription = request.ProfileDescription;
             expert.City = request.City;
+            expert.Education = request.Education;
+            expert.Certificates = request.Certificates;
             expert.WorkType = string.IsNullOrWhiteSpace(request.WorkType) ? null : EnumExtensions.ParseWorkType(request.WorkType);
             expert.ExperienceStartDate = request.ExperienceStartDate;
+            expert.IntroVideoUrl = request.IntroVideoUrl;
             expert.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
@@ -115,7 +125,11 @@ namespace HealthLink.Api.Services
                 DisplayName = expert.DisplayName,
                 Bio = expert.Bio,
                 ProfileDescription = expert.ProfileDescription ?? (expert.Bio != null ? expert.Bio.Substring(0, Math.Min(expert.Bio.Length, 100)) : null),
+                ProfilePhotoUrl = expert.ProfilePhotoUrl,
+                IntroVideoUrl = expert.IntroVideoUrl,
                 City = expert.City,
+                Education = expert.Education,
+                Certificates = expert.Certificates,
                 WorkType = expert.WorkType.ToApiString(),
                 ExperienceStartDate = expert.ExperienceStartDate,
                 AverageRating = expert.AverageRating,
@@ -134,10 +148,14 @@ namespace HealthLink.Api.Services
             string? city,
             long? specializationId,
             string? sort,
+            bool? isOnline,
             int page = 1,
             int pageSize = 20)
         {
+            var now = DateTime.UtcNow;
+
             var query = _db.Experts
+                .Include(x => x.User)
                 .Include(x => x.ExpertSpecializations)
                     .ThenInclude(es => es.Specialization)
                 .Where(x => x.Status == Entities.Enums.ExpertStatus.Approved && x.IsActive);
@@ -157,6 +175,14 @@ namespace HealthLink.Api.Services
             {
                 query = query.Where(x => x.ExpertSpecializations.Any(es => es.SpecializationId == specializationId.Value));
             }
+            // Filter by online status only
+            if (isOnline == true)
+            {
+                var threshold = now.AddMinutes(-5);
+                query = query.Where(x => 
+                    !x.IsManuallyOffline
+                    && x.User.LastSeenAt != null && x.User.LastSeenAt > threshold);
+            }
             // Sorting
             query = sort?.ToLower() switch
             {
@@ -165,6 +191,7 @@ namespace HealthLink.Api.Services
                 _ => query.OrderByDescending(x => x.AverageRating) // default
             };
             var totalCount = await query.CountAsync();
+            var onlineThreshold = now.AddMinutes(-5);
             var items = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -180,7 +207,9 @@ namespace HealthLink.Api.Services
                     Specializations = x.ExpertSpecializations
                         .Select(es => es.Specialization.Name)
                         .ToList(),
-                    ProfileDescription = x.ProfileDescription ?? (x.Bio != null ? x.Bio.Substring(0, Math.Min(x.Bio.Length, 100)) : null)
+                    ProfileDescription = x.ProfileDescription ?? (x.Bio != null ? x.Bio.Substring(0, Math.Min(x.Bio.Length, 100)) : null),
+                    ProfilePhotoUrl = x.ProfilePhotoUrl,
+                    IsOnline = !x.IsManuallyOffline && x.User.LastSeenAt != null && x.User.LastSeenAt > onlineThreshold,
                 })
                 .ToListAsync();
             return new Common.PagedResult<ExpertListItemDto>
@@ -190,6 +219,16 @@ namespace HealthLink.Api.Services
                 PageSize = pageSize,
                 TotalCount = totalCount
             };
+        }
+        public async Task SetOnlineStatusAsync(long userId, bool isOffline)
+        {
+            var expert = await _db.Experts.FirstOrDefaultAsync(e => e.UserId == userId);
+            if (expert == null)
+                throw new KeyNotFoundException("Expert not found");
+
+            expert.IsManuallyOffline = isOffline;
+            expert.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
         }
         public async Task<Common.PagedResult<ExpertListItemDto>> GetAllExpertsForAdminAsync(
             string? search,
@@ -252,7 +291,8 @@ namespace HealthLink.Api.Services
                     CreatedAt = x.CreatedAt,
                     Specializations = x.ExpertSpecializations
                         .Select(es => es.Specialization.Name)
-                        .ToList()
+                        .ToList(),
+                    ProfilePhotoUrl = x.ProfilePhotoUrl,
                 })
                 .ToListAsync();
             return new Common.PagedResult<ExpertListItemDto>
@@ -462,7 +502,9 @@ namespace HealthLink.Api.Services
                     Email = g.First().Client.User?.Email,
                     TotalAppointments = g.Count(),
                     CompletedAppointments = g.Count(a => a.Status == Entities.Enums.AppointmentStatus.Completed),
-                    LastAppointmentDate = g.Max(a => a.StartDateTime)
+                    LastAppointmentDate = g.Max(a => a.StartDateTime),
+                    BirthDate = g.First().Client.BirthDate,
+                    Gender = g.First().Client.Gender.HasValue ? g.First().Client.Gender.Value.ToString() : null
                 })
                 .ToList();
 

@@ -47,19 +47,6 @@ public class AdminLookupsController : BaseAuthenticatedController
                 ["Recipe"] = "Tarif",
                 ["Announcement"] = "Duyuru"
             }),
-            ComplaintStatuses = EnumToLookup<ComplaintStatus>(new Dictionary<string, string>
-            {
-                ["Open"] = "Açık",
-                ["InReview"] = "İnceleniyor",
-                ["Resolved"] = "Çözüldü",
-                ["Rejected"] = "Reddedildi"
-            }),
-            ComplaintCategories = EnumToLookup<ComplaintCategory>(new Dictionary<string, string>
-            {
-                ["Expert"] = "Uzman",
-                ["System"] = "Sistem",
-                ["Payment"] = "Ödeme"
-            }),
             AppointmentStatuses = EnumToLookup<AppointmentStatus>(new Dictionary<string, string>
             {
                 ["Scheduled"] = "Planlandı",
@@ -113,8 +100,6 @@ public class AdminLookupsDto
     public List<LookupItem> ReviewStatuses { get; set; } = new();
     public List<LookupItem> ContentItemStatuses { get; set; } = new();
     public List<LookupItem> ContentItemTypes { get; set; } = new();
-    public List<LookupItem> ComplaintStatuses { get; set; } = new();
-    public List<LookupItem> ComplaintCategories { get; set; } = new();
     public List<LookupItem> AppointmentStatuses { get; set; } = new();
     public List<LookupItem> ExpertTypes { get; set; } = new();
     public List<LookupItem> SpecializationCategories { get; set; } = new();

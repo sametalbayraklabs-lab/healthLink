@@ -18,5 +18,7 @@ public class ExpertListItemDto
     public DateTime CreatedAt { get; set; }
     public List<string> Specializations { get; set; } = new(); // Just names
     public string? ProfileDescription { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
+    public bool IsOnline { get; set; }
 }
 

@@ -20,11 +20,12 @@ import {
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { useChat } from '@/contexts/ChatContext';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import ChatIcon from '@mui/icons-material/Chat';
+import MessageIcon from '@mui/icons-material/Message';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import PersonIcon from '@mui/icons-material/Person';
 import WorkIcon from '@mui/icons-material/Work';
 
 interface MyExpert {
@@ -48,6 +49,7 @@ const expertTypeLabels: Record<string, string> = {
 
 export default function MyExpertsPage() {
     const router = useRouter();
+    const { openChatWithExpert } = useChat();
     const [experts, setExperts] = useState<MyExpert[]>([]);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState(0);
@@ -128,7 +130,7 @@ export default function MyExpertsPage() {
                             <Typography variant="body2" color="text.secondary" mb={2}>
                                 Uzman arayarak favori listenizi oluşturabilirsiniz
                             </Typography>
-                            <Button variant="contained" onClick={() => router.push('/client/experts')}>
+                            <Button variant="contained" onClick={() => router.push('/client/appointments/new')}>
                                 Uzman Ara
                             </Button>
                         </Box>
@@ -146,16 +148,18 @@ export default function MyExpertsPage() {
                             <Card
                                 key={expert.expertId}
                                 sx={{
-                                    '&:hover': { boxShadow: 4 },
-                                    transition: 'box-shadow 0.3s',
+                                    cursor: 'pointer',
+                                    '&:hover': { boxShadow: 4, transform: 'translateY(-1px)' },
+                                    transition: 'box-shadow 0.3s, transform 0.15s',
                                     borderLeft: expert.isFavorite ? '4px solid' : 'none',
                                     borderColor: expert.isFavorite ? 'error.main' : 'transparent',
                                 }}
+                                onClick={() => router.push(`/experts/${expert.expertId}`)}
                             >
                                 <CardContent>
                                     <Box display="flex" alignItems="center" gap={2}>
                                         <Avatar
-                                            src={expert.profilePhotoUrl || undefined}
+                                            src={expert.profilePhotoUrl ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107'}${expert.profilePhotoUrl}` : undefined}
                                             sx={{ width: 64, height: 64, bgcolor: 'primary.main', fontSize: '1.5rem' }}
                                         >
                                             {expert.displayName?.charAt(0)}
@@ -196,7 +200,7 @@ export default function MyExpertsPage() {
                                             </Stack>
                                         </Box>
 
-                                        <Stack direction="row" spacing={1} alignItems="center">
+                                        <Stack direction="row" spacing={1} alignItems="center" onClick={(e) => e.stopPropagation()}>
                                             <Tooltip title={expert.isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle'}>
                                                 <IconButton
                                                     onClick={() => toggleFavorite(expert.expertId, expert.isFavorite)}
@@ -205,27 +209,44 @@ export default function MyExpertsPage() {
                                                     {expert.isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                                                 </IconButton>
                                             </Tooltip>
-                                            <Tooltip title="Mesaj gönder">
-                                                <IconButton
-                                                    onClick={() => router.push(`/client/messages?expertId=${expert.expertId}`)}
-                                                    color="primary"
-                                                >
-                                                    <ChatIcon />
-                                                </IconButton>
-                                            </Tooltip>
                                             <Button
                                                 variant="outlined"
                                                 size="small"
-                                                startIcon={<VisibilityIcon />}
+                                                startIcon={<PersonIcon />}
                                                 onClick={() => router.push(`/experts/${expert.expertId}`)}
+                                                sx={{
+                                                    borderRadius: '10px',
+                                                    textTransform: 'none',
+                                                    fontWeight: 500,
+                                                    color: 'text.primary',
+                                                    borderColor: 'text.primary',
+                                                    '&:hover': { borderColor: 'text.primary', bgcolor: 'rgba(0,0,0,0.04)' },
+                                                }}
                                             >
                                                 Profil
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={<MessageIcon />}
+                                                onClick={() => openChatWithExpert(expert.expertId)}
+                                                sx={{
+                                                    borderRadius: '10px',
+                                                    textTransform: 'none',
+                                                    fontWeight: 500,
+                                                    color: '#1976d2',
+                                                    borderColor: '#90CAF9',
+                                                    '&:hover': { borderColor: '#1976d2', bgcolor: 'rgba(25,118,210,0.04)' },
+                                                }}
+                                            >
+                                                Mesaj
                                             </Button>
                                             <Button
                                                 variant="contained"
                                                 size="small"
                                                 startIcon={<CalendarMonthIcon />}
                                                 onClick={() => router.push(`/client/appointments/new?expertId=${expert.expertId}`)}
+                                                sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
                                             >
                                                 Randevu
                                             </Button>
@@ -237,6 +258,22 @@ export default function MyExpertsPage() {
                     })}
                 </Stack>
             )}
+
+            {/* Uzman Ara CTA */}
+            <Box textAlign="center" mt={4} py={3}>
+                <Typography variant="body1" color="text.secondary" mb={2}>
+                    Yeni bir uzman mı arıyorsunuz?
+                </Typography>
+                <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<CalendarMonthIcon />}
+                    onClick={() => router.push('/client/appointments/new')}
+                    sx={{ px: 4, py: 1.5 }}
+                >
+                    Uzman Ara & Randevu Al
+                </Button>
+            </Box>
         </Container>
     );
 }

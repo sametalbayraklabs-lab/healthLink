@@ -162,45 +162,6 @@ public static class EnumExtensions
         throw new ArgumentException($"Invalid ReviewStatus: {value}");
     }
 
-    // ComplaintCategory
-    public static string ToApiString(this ComplaintCategory category)
-    {
-        return category.ToString();
-    }
-
-    public static ComplaintCategory ParseComplaintCategory(string value)
-    {
-        if (Enum.TryParse<ComplaintCategory>(value, true, out var result))
-            return result;
-        throw new ArgumentException($"Invalid ComplaintCategory: {value}");
-    }
-
-    // ComplaintType
-    public static string ToApiString(this ComplaintType type)
-    {
-        return type.ToString();
-    }
-
-    public static ComplaintType ParseComplaintType(string value)
-    {
-        if (Enum.TryParse<ComplaintType>(value, true, out var result))
-            return result;
-        throw new ArgumentException($"Invalid ComplaintType: {value}");
-    }
-
-    // ComplaintStatus
-    public static string ToApiString(this ComplaintStatus status)
-    {
-        return status.ToString();
-    }
-
-    public static ComplaintStatus ParseComplaintStatus(string value)
-    {
-        if (Enum.TryParse<ComplaintStatus>(value, true, out var result))
-            return result;
-        throw new ArgumentException($"Invalid ComplaintStatus: {value}");
-    }
-
     // ContentItemType
     public static string ToApiString(this ContentItemType type)
     {

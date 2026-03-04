@@ -226,7 +226,7 @@ export default function VideoRoom({ meetingUrl, token, appointmentId, role, onLe
                     }}
                 >
                     <Typography variant="subtitle1" fontWeight={600}>
-                        🎥 HealthLink Görüşme
+                        🎥 DengedeKal Görüşme
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button

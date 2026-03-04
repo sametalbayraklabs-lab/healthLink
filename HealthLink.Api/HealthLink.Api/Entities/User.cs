@@ -11,6 +11,7 @@ public class User
     public string? Phone { get; set; }
 
     public bool IsActive { get; set; } = true;
+    public DateTime? LastSeenAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

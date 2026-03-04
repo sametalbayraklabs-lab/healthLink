@@ -110,7 +110,7 @@ export default function PaymentResultPage() {
                             )}
                             <Button
                                 variant="outlined"
-                                onClick={() => router.push('/client/my-packages')}
+                                onClick={() => router.push('/client/packages')}
                                 startIcon={<ShoppingCartIcon />}
                             >
                                 Paketlerime Git

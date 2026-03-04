@@ -25,15 +25,15 @@ namespace HealthLink.Api.Data
         public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
         public DbSet<PaymentDiscountUsage> PaymentDiscountUsages => Set<PaymentDiscountUsage>();
         public DbSet<Appointment> Appointments => Set<Appointment>();
-        public DbSet<AppointmentNote> AppointmentNotes => Set<AppointmentNote>();
-        public DbSet<AppointmentReport> AppointmentReports => Set<AppointmentReport>();
+        public DbSet<ClientNote> ClientNotes => Set<ClientNote>();
+        public DbSet<ClientMeasurement> ClientMeasurements => Set<ClientMeasurement>();
         public DbSet<ExpertScheduleTemplate> ExpertScheduleTemplates => Set<ExpertScheduleTemplate>();
         public DbSet<ExpertScheduleTimeSlot> ExpertScheduleTimeSlots => Set<ExpertScheduleTimeSlot>();
         public DbSet<ExpertScheduleException> ExpertScheduleExceptions => Set<ExpertScheduleException>();
         public DbSet<ExpertAvailabilitySlot> ExpertAvailabilitySlots => Set<ExpertAvailabilitySlot>();
         public DbSet<TimeSlotTemplate> TimeSlotTemplates => Set<TimeSlotTemplate>();
         public DbSet<Review> Reviews => Set<Review>();
-        public DbSet<Complaint> Complaints => Set<Complaint>();
+
         public DbSet<Conversation> Conversations => Set<Conversation>();
         public DbSet<Message> Messages => Set<Message>();
         public DbSet<ConversationFlag> ConversationFlags => Set<ConversationFlag>();
@@ -42,6 +42,9 @@ namespace HealthLink.Api.Data
         public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         public DbSet<FavoriteExpert> FavoriteExperts => Set<FavoriteExpert>();
+        public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
+        public DbSet<SupportMessage> SupportMessages => Set<SupportMessage>();
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -529,59 +532,6 @@ namespace HealthLink.Api.Data
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
-            modelBuilder.Entity<AppointmentNote>(entity =>
-            {
-                entity.ToTable("AppointmentNotes");
-
-                entity.HasKey(x => x.Id);
-
-                entity.Property(x => x.NoteText)
-                      .HasMaxLength(1000)
-                      .IsRequired();
-
-                entity.Property(x => x.CreatedAt)
-                      .IsRequired();
-
-                entity.Property(x => x.UpdatedAt)
-                      .IsRequired(false);
-
-                entity.HasOne(x => x.Appointment)
-                      .WithMany()
-                      .HasForeignKey(x => x.AppointmentId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(x => x.Client)
-                      .WithMany()
-                      .HasForeignKey(x => x.ClientId)
-                      .OnDelete(DeleteBehavior.Restrict);
-            });
-
-            modelBuilder.Entity<AppointmentReport>(entity =>
-            {
-                entity.ToTable("AppointmentReports");
-
-                entity.HasKey(x => x.Id);
-
-                entity.Property(x => x.ReportText)
-                      .IsRequired();
-
-                entity.Property(x => x.CreatedAt)
-                      .IsRequired();
-
-                entity.Property(x => x.UpdatedAt)
-                      .IsRequired(false);
-
-                entity.HasOne(x => x.Appointment)
-                      .WithMany()
-                      .HasForeignKey(x => x.AppointmentId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(x => x.Expert)
-                      .WithMany()
-                      .HasForeignKey(x => x.ExpertId)
-                      .OnDelete(DeleteBehavior.Restrict);
-            });
-
             modelBuilder.Entity<ExpertScheduleTemplate>(entity =>
             {
                 entity.ToTable("ExpertScheduleTemplates");
@@ -795,56 +745,6 @@ namespace HealthLink.Api.Data
                       .IsUnique();
             });
 
-            modelBuilder.Entity<Complaint>(entity =>
-            {
-                entity.ToTable("Complaints");
-
-                entity.HasKey(x => x.Id);
-
-                entity.Property(x => x.Category)
-                      .IsRequired();
-
-                entity.Property(x => x.Type)
-                      .IsRequired();
-
-                entity.Property(x => x.Title)
-                      .HasMaxLength(200)
-                      .IsRequired();
-
-                entity.Property(x => x.Description)
-                      .IsRequired(false);
-
-                entity.Property(x => x.Status)
-                      .IsRequired();
-
-                entity.Property(x => x.AdminNote)
-                      .HasMaxLength(500)
-                      .IsRequired(false);
-
-                entity.Property(x => x.CreatedAt)
-                      .IsRequired();
-
-                entity.Property(x => x.UpdatedAt)
-                      .IsRequired(false);
-
-                entity.Property(x => x.ClosedAt)
-                      .IsRequired(false);
-
-                entity.HasOne(x => x.Client)
-                      .WithMany()
-                      .HasForeignKey(x => x.ClientId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(x => x.Expert)
-                      .WithMany()
-                      .HasForeignKey(x => x.ExpertId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(x => x.Appointment)
-                      .WithMany()
-                      .HasForeignKey(x => x.AppointmentId)
-                      .OnDelete(DeleteBehavior.Restrict);
-            });
 
             modelBuilder.Entity<Conversation>(entity =>
             {
@@ -1151,7 +1051,133 @@ namespace HealthLink.Api.Data
                       .IsUnique();
             });
 
+            modelBuilder.Entity<SupportRequest>(entity =>
+            {
+                entity.ToTable("SupportRequests");
+
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.Subject)
+                      .IsRequired()
+                      .HasMaxLength(200);
+
+                entity.Property(x => x.Description)
+                      .IsRequired()
+                      .HasMaxLength(2000);
+
+                entity.Property(x => x.Status)
+                      .IsRequired()
+                      .HasMaxLength(20)
+                      .HasDefaultValue("Open");
+
+                entity.Property(x => x.CreatedAt)
+                      .IsRequired();
+
+                entity.Property(x => x.UpdatedAt)
+                      .IsRequired(false);
+
+                entity.HasOne(x => x.CreatedByUser)
+                      .WithMany()
+                      .HasForeignKey(x => x.CreatedByUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.OperatorUser)
+                      .WithMany()
+                      .HasForeignKey(x => x.OperatorUserId)
+                      .IsRequired(false)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<SupportMessage>(entity =>
+            {
+                entity.ToTable("SupportMessages");
+
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.MessageText)
+                      .IsRequired()
+                      .HasMaxLength(2000);
+
+                entity.Property(x => x.IsRead)
+                      .HasDefaultValue(false);
+
+                entity.Property(x => x.CreatedAt)
+                      .IsRequired();
+
+                entity.HasOne(x => x.SupportRequest)
+                      .WithMany()
+                      .HasForeignKey(x => x.SupportRequestId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Sender)
+                      .WithMany()
+                      .HasForeignKey(x => x.SenderUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // ── ClientNote ──
+            modelBuilder.Entity<ClientNote>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.Content)
+                      .IsRequired();
+
+                entity.Property(x => x.NoteType)
+                      .HasConversion<string>()
+                      .HasMaxLength(20)
+                      .IsRequired();
+
+                entity.Property(x => x.CreatedAt)
+                      .IsRequired();
+
+                entity.HasOne(x => x.Client)
+                      .WithMany()
+                      .HasForeignKey(x => x.ClientId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Expert)
+                      .WithMany()
+                      .HasForeignKey(x => x.ExpertId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Appointment)
+                      .WithMany()
+                      .HasForeignKey(x => x.AppointmentId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(x => new { x.ExpertId, x.ClientId });
+                entity.HasIndex(x => x.AppointmentId);
+            });
+
+            // ── ClientMeasurement ──
+            modelBuilder.Entity<ClientMeasurement>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.HeightCm).IsRequired();
+                entity.Property(x => x.WeightKg).HasPrecision(5, 2).IsRequired();
+                entity.Property(x => x.BodyFatPercentage).HasPrecision(4, 1);
+                entity.Property(x => x.Bmi).HasPrecision(4, 1).IsRequired();
+                entity.Property(x => x.Date).IsRequired();
+                entity.Property(x => x.CreatedAt).IsRequired();
+
+                entity.HasOne(x => x.Client)
+                      .WithMany()
+                      .HasForeignKey(x => x.ClientId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Expert)
+                      .WithMany()
+                      .HasForeignKey(x => x.ExpertId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => new { x.ExpertId, x.ClientId });
+                entity.HasIndex(x => x.Date);
+            });
+
         }
+
         public override async Task<int> SaveChangesAsync(
                         CancellationToken cancellationToken = default)
         {

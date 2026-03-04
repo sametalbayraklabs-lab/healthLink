@@ -22,7 +22,7 @@ public class SpecializationService : ISpecializationService
         if (!string.IsNullOrWhiteSpace(expertType))
         {
             var parsedType = EnumExtensions.ParseExpertType(expertType);
-            query = query.Where(s => s.ExpertType == parsedType);
+            query = query.Where(s => s.ExpertType == parsedType || s.ExpertType == Entities.Enums.ExpertType.All);
         }
 
         return await query

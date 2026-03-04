@@ -82,7 +82,8 @@ public class ClientService : IClientService
 
         var activePackagesCount = await _db.ClientPackages.CountAsync(x =>
             x.ClientId == client.Id &&
-            x.Status == ClientPackageStatus.Active);
+            x.Status == ClientPackageStatus.Active &&
+            x.UsedSessions < x.TotalSessions);
 
         // Simplified unread messages query
         var unreadMessagesCount = await (

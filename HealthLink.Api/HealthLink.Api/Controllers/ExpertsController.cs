@@ -17,11 +17,13 @@ public class ExpertsController : ControllerBase
 {
     private readonly IExpertService _expertService;
     private readonly AppDbContext _db;
+    private readonly IWebHostEnvironment _env;
 
-    public ExpertsController(IExpertService expertService, AppDbContext db)
+    public ExpertsController(IExpertService expertService, AppDbContext db, IWebHostEnvironment env)
     {
         _expertService = expertService;
         _db = db;
+        _env = env;
     }
 
     [HttpGet("me")]
@@ -55,10 +57,11 @@ public class ExpertsController : ControllerBase
         [FromQuery] string? city,
         [FromQuery] long? specializationId,
         [FromQuery] string? sort,
+        [FromQuery] bool? isOnline,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        var result = await _expertService.GetExpertsAsync(expertType, city, specializationId, sort, page, pageSize);
+        var result = await _expertService.GetExpertsAsync(expertType, city, specializationId, sort, isOnline, page, pageSize);
         return Ok(result);
     }
 
@@ -83,6 +86,42 @@ public class ExpertsController : ControllerBase
         var userId = Common.UserHelper.GetUserId(User);
         await _expertService.SetSpecializationsAsync(userId, request.SpecializationIds);
         return Ok(new { expertId = Common.UserHelper.GetExpertId(User), specializationIds = request.SpecializationIds });
+    }
+
+    [HttpPost("me/photo")]
+    [Authorize(Roles = "Expert")]
+    [RequestSizeLimit(5 * 1024 * 1024)] // 5 MB
+    public async Task<ActionResult> UploadPhoto(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("Dosya seçilmedi.");
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+        if (!allowedTypes.Contains(file.ContentType))
+            return BadRequest("Sadece JPEG, PNG veya WebP formatları desteklenir.");
+
+        var userId = Common.UserHelper.GetUserId(User);
+        var expert = await _db.Experts.FirstOrDefaultAsync(e => e.UserId == userId);
+        if (expert == null) return NotFound();
+
+        var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+        var uploadsDir = Path.Combine(webRoot, "uploads", "photos");
+        Directory.CreateDirectory(uploadsDir);
+
+        var ext = Path.GetExtension(file.FileName);
+        var fileName = $"expert_{expert.Id}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{ext}";
+        var filePath = Path.Combine(uploadsDir, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        expert.ProfilePhotoUrl = $"/uploads/photos/{fileName}";
+        expert.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { profilePhotoUrl = expert.ProfilePhotoUrl });
     }
 
     [HttpPut("{id}/approve")]

@@ -130,73 +130,6 @@ namespace HealthLink.Api.Migrations
                     b.ToTable("Appointments", (string)null);
                 });
 
-            modelBuilder.Entity("HealthLink.Api.Entities.AppointmentNote", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("AppointmentId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("ClientId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("NoteText")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AppointmentId");
-
-                    b.HasIndex("ClientId");
-
-                    b.ToTable("AppointmentNotes", (string)null);
-                });
-
-            modelBuilder.Entity("HealthLink.Api.Entities.AppointmentReport", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("AppointmentId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("ExpertId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("ReportText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AppointmentId");
-
-                    b.HasIndex("ExpertId");
-
-                    b.ToTable("AppointmentReports", (string)null);
-                });
-
             modelBuilder.Entity("HealthLink.Api.Entities.AuditLog", b =>
                 {
                     b.Property<long>("Id")
@@ -283,6 +216,98 @@ namespace HealthLink.Api.Migrations
                     b.ToTable("Clients", (string)null);
                 });
 
+            modelBuilder.Entity("HealthLink.Api.Entities.ClientMeasurement", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Bmi")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)");
+
+                    b.Property<decimal?>("BodyFatPercentage")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)");
+
+                    b.Property<long>("ClientId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("ExpertId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("HeightCm")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.HasIndex("Date");
+
+                    b.HasIndex("ExpertId", "ClientId");
+
+                    b.ToTable("ClientMeasurements");
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.ClientNote", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("AppointmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ClientId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("ExpertId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("NoteType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId");
+
+                    b.HasIndex("ClientId");
+
+                    b.HasIndex("ExpertId", "ClientId");
+
+                    b.ToTable("ClientNotes");
+                });
+
             modelBuilder.Entity("HealthLink.Api.Entities.ClientPackage", b =>
                 {
                     b.Property<long>("Id")
@@ -327,64 +352,6 @@ namespace HealthLink.Api.Migrations
                     b.HasIndex("ServicePackageId");
 
                     b.ToTable("ClientPackages", (string)null);
-                });
-
-            modelBuilder.Entity("HealthLink.Api.Entities.Complaint", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("AdminNote")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<long?>("AppointmentId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("Category")
-                        .HasColumnType("integer");
-
-                    b.Property<long?>("ClientId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("ClosedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<long?>("ExpertId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AppointmentId");
-
-                    b.HasIndex("ClientId");
-
-                    b.HasIndex("ExpertId");
-
-                    b.ToTable("Complaints", (string)null);
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.ContentItem", b =>
@@ -643,6 +610,9 @@ namespace HealthLink.Api.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
+                    b.Property<string>("Certificates")
+                        .HasColumnType("text");
+
                     b.Property<string>("City")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -653,6 +623,9 @@ namespace HealthLink.Api.Migrations
                     b.Property<string>("DisplayName")
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Education")
+                        .HasColumnType("text");
 
                     b.Property<DateOnly?>("ExperienceStartDate")
                         .HasColumnType("date");
@@ -667,6 +640,9 @@ namespace HealthLink.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("IsManuallyOffline")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("ProfileDescription")
                         .HasMaxLength(300)
@@ -1163,7 +1139,7 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(881),
+                            CreatedAt = new DateTime(2026, 3, 2, 10, 52, 55, 278, DateTimeKind.Utc).AddTicks(4710),
                             Currency = "TRY",
                             Description = "One online consultation session",
                             ExpertType = 0,
@@ -1176,7 +1152,7 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 2L,
-                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(884),
+                            CreatedAt = new DateTime(2026, 3, 2, 10, 52, 55, 278, DateTimeKind.Utc).AddTicks(4712),
                             Currency = "TRY",
                             Description = "Four online consultation sessions",
                             ExpertType = 0,
@@ -1233,7 +1209,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 1L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(839),
+                            CreatedAt = new DateTime(2026, 3, 2, 10, 52, 55, 278, DateTimeKind.Utc).AddTicks(4602),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Clinical Nutrition"
@@ -1242,7 +1218,7 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 2L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(841),
+                            CreatedAt = new DateTime(2026, 3, 2, 10, 52, 55, 278, DateTimeKind.Utc).AddTicks(4604),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Sports Nutrition"
@@ -1251,11 +1227,93 @@ namespace HealthLink.Api.Migrations
                         {
                             Id = 3L,
                             Category = 0,
-                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(843),
+                            CreatedAt = new DateTime(2026, 3, 2, 10, 52, 55, 278, DateTimeKind.Utc).AddTicks(4605),
                             ExpertType = 0,
                             IsActive = true,
                             Name = "Weight Management"
                         });
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.SupportMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("MessageText")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<long>("SenderUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("SupportRequestId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SenderUserId");
+
+                    b.HasIndex("SupportRequestId");
+
+                    b.ToTable("SupportMessages", (string)null);
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.SupportRequest", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<long?>("OperatorUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Open");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("OperatorUserId");
+
+                    b.ToTable("SupportRequests", (string)null);
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.SystemSetting", b =>
@@ -1292,21 +1350,21 @@ namespace HealthLink.Api.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(682),
+                            CreatedAt = new DateTime(2026, 3, 2, 10, 52, 55, 278, DateTimeKind.Utc).AddTicks(4307),
                             Key = "Platform.CommissionRate",
                             Value = "0.15"
                         },
                         new
                         {
                             Id = 2L,
-                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(685),
+                            CreatedAt = new DateTime(2026, 3, 2, 10, 52, 55, 278, DateTimeKind.Utc).AddTicks(4312),
                             Key = "Session.DefaultDurationMinutes",
                             Value = "30"
                         },
                         new
                         {
                             Id = 3L,
-                            CreatedAt = new DateTime(2026, 2, 17, 12, 47, 8, 2, DateTimeKind.Utc).AddTicks(689),
+                            CreatedAt = new DateTime(2026, 3, 2, 10, 52, 55, 278, DateTimeKind.Utc).AddTicks(4313),
                             Key = "Session.CancelLimitHours",
                             Value = "24"
                         });
@@ -1744,6 +1802,9 @@ namespace HealthLink.Api.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<DateTime?>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1804,44 +1865,6 @@ namespace HealthLink.Api.Migrations
                     b.Navigation("Expert");
                 });
 
-            modelBuilder.Entity("HealthLink.Api.Entities.AppointmentNote", b =>
-                {
-                    b.HasOne("HealthLink.Api.Entities.Appointment", "Appointment")
-                        .WithMany()
-                        .HasForeignKey("AppointmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HealthLink.Api.Entities.Client", "Client")
-                        .WithMany()
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Appointment");
-
-                    b.Navigation("Client");
-                });
-
-            modelBuilder.Entity("HealthLink.Api.Entities.AppointmentReport", b =>
-                {
-                    b.HasOne("HealthLink.Api.Entities.Appointment", "Appointment")
-                        .WithMany()
-                        .HasForeignKey("AppointmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HealthLink.Api.Entities.Expert", "Expert")
-                        .WithMany()
-                        .HasForeignKey("ExpertId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Appointment");
-
-                    b.Navigation("Expert");
-                });
-
             modelBuilder.Entity("HealthLink.Api.Entities.AuditLog", b =>
                 {
                     b.HasOne("HealthLink.Api.Entities.User", "User")
@@ -1863,6 +1886,51 @@ namespace HealthLink.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("HealthLink.Api.Entities.ClientMeasurement", b =>
+                {
+                    b.HasOne("HealthLink.Api.Entities.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HealthLink.Api.Entities.Expert", "Expert")
+                        .WithMany()
+                        .HasForeignKey("ExpertId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+
+                    b.Navigation("Expert");
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.ClientNote", b =>
+                {
+                    b.HasOne("HealthLink.Api.Entities.Appointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("HealthLink.Api.Entities.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HealthLink.Api.Entities.Expert", "Expert")
+                        .WithMany()
+                        .HasForeignKey("ExpertId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+
+                    b.Navigation("Client");
+
+                    b.Navigation("Expert");
+                });
+
             modelBuilder.Entity("HealthLink.Api.Entities.ClientPackage", b =>
                 {
                     b.HasOne("HealthLink.Api.Entities.Client", "Client")
@@ -1880,30 +1948,6 @@ namespace HealthLink.Api.Migrations
                     b.Navigation("Client");
 
                     b.Navigation("ServicePackage");
-                });
-
-            modelBuilder.Entity("HealthLink.Api.Entities.Complaint", b =>
-                {
-                    b.HasOne("HealthLink.Api.Entities.Appointment", "Appointment")
-                        .WithMany()
-                        .HasForeignKey("AppointmentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("HealthLink.Api.Entities.Client", "Client")
-                        .WithMany()
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("HealthLink.Api.Entities.Expert", "Expert")
-                        .WithMany()
-                        .HasForeignKey("ExpertId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Appointment");
-
-                    b.Navigation("Client");
-
-                    b.Navigation("Expert");
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.ContentItem", b =>
@@ -2175,6 +2219,43 @@ namespace HealthLink.Api.Migrations
                     b.Navigation("Expert");
 
                     b.Navigation("ReviewedByAdmin");
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.SupportMessage", b =>
+                {
+                    b.HasOne("HealthLink.Api.Entities.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HealthLink.Api.Entities.SupportRequest", "SupportRequest")
+                        .WithMany()
+                        .HasForeignKey("SupportRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sender");
+
+                    b.Navigation("SupportRequest");
+                });
+
+            modelBuilder.Entity("HealthLink.Api.Entities.SupportRequest", b =>
+                {
+                    b.HasOne("HealthLink.Api.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HealthLink.Api.Entities.User", "OperatorUser")
+                        .WithMany()
+                        .HasForeignKey("OperatorUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("OperatorUser");
                 });
 
             modelBuilder.Entity("HealthLink.Api.Entities.Expert", b =>

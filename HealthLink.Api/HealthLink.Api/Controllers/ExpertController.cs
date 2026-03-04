@@ -67,4 +67,19 @@ public class ExpertController : BaseAuthenticatedController
         var clients = await _service.GetExpertClientsAsync(UserId);
         return Ok(clients);
     }
+
+    /// <summary>
+    /// Set expert's online/offline status
+    /// </summary>
+    [HttpPost("status")]
+    public async Task<IActionResult> SetStatus([FromBody] SetStatusRequest request)
+    {
+        await _service.SetOnlineStatusAsync(UserId, request.IsOffline);
+        return Ok(new { isOffline = request.IsOffline });
+    }
+}
+
+public class SetStatusRequest
+{
+    public bool IsOffline { get; set; }
 }
