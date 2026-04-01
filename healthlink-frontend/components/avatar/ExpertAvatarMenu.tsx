@@ -27,13 +27,14 @@ const MENU_PAPER_SX = {
 };
 
 export default function ExpertAvatarMenu() {
-    const { user, logout } = useAuth();
+    const { user, logout, updateProfilePhoto } = useAuth();
     const router = useRouter();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [isManuallyOffline, setIsManuallyOffline] = useState(false);
     const open = Boolean(anchorEl);
 
     const initial = user?.email ? user.email.charAt(0).toUpperCase() : 'U';
+    const avatarSrc = user?.profilePhotoUrl ? `${API_URL}${user.profilePhotoUrl}` : undefined;
     const onlineBorderColor = isManuallyOffline ? '#ef5350' : '#4caf50';
 
     useEffect(() => {
@@ -45,6 +46,10 @@ export default function ExpertAvatarMenu() {
                 if (res.ok) {
                     const data = await res.json();
                     setIsManuallyOffline(data.isManuallyOffline || false);
+                    // Sync profile photo to Navbar avatar
+                    if (data.profilePhotoUrl) {
+                        updateProfilePhoto(data.profilePhotoUrl);
+                    }
                 }
             } catch (e) {
                 console.error('Error fetching expert status:', e);
@@ -93,6 +98,7 @@ export default function ExpertAvatarMenu() {
                     aria-expanded={open ? 'true' : undefined}
                 >
                     <Avatar
+                        src={avatarSrc}
                         sx={{
                             width: 36,
                             height: 36,

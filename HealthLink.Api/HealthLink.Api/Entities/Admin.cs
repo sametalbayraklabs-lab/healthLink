@@ -15,6 +15,8 @@ public class Admin
 
     public bool IsActive { get; set; } = true;
 
+    public string? ProfilePhotoUrl { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 }

@@ -13,6 +13,7 @@ import {
     InputAdornment,
     Chip,
     Button,
+    Avatar,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import MessageIcon from '@mui/icons-material/Message';
@@ -27,6 +28,7 @@ interface ExpertClient {
     totalAppointments: number;
     completedAppointments: number;
     lastAppointmentDate?: string;
+    profilePhotoUrl?: string;
 }
 
 export default function ExpertClientsPage() {
@@ -106,7 +108,20 @@ export default function ExpertClientsPage() {
                     >
                         <CardContent>
                             <Box display="flex" justifyContent="space-between" alignItems="center">
-                                <Box>
+                                <Box display="flex" alignItems="center" gap={2}>
+                                    <Avatar
+                                        src={client.profilePhotoUrl ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107'}${client.profilePhotoUrl}` : undefined}
+                                        sx={{
+                                            width: 48,
+                                            height: 48,
+                                            bgcolor: '#0F766E',
+                                            fontWeight: 700,
+                                            fontSize: '1rem',
+                                        }}
+                                    >
+                                        {client.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                    </Avatar>
+                                    <Box>
                                     <Typography variant="h6" fontWeight={600}>
                                         {client.fullName}
                                     </Typography>
@@ -115,6 +130,7 @@ export default function ExpertClientsPage() {
                                             <strong>Son Randevu:</strong> {formatDateTime(client.lastAppointmentDate)}
                                         </Typography>
                                     )}
+                                    </Box>
                                 </Box>
                                 <Box display="flex" gap={1} alignItems="center">
                                     <Chip

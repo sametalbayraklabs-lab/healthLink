@@ -15,6 +15,8 @@ namespace HealthLink.Api.Entities
         public Gender? Gender { get; set; }         // Nullable enum (stored as int)
         public DateTime? BirthDate { get; set; }    // TDD: birthdate (kept nullable)
 
+        public string? ProfilePhotoUrl { get; set; }   // Profile photo path
+
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

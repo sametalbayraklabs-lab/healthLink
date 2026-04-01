@@ -29,6 +29,8 @@ export default function ClientAvatarMenu() {
     const open = Boolean(anchorEl);
 
     const initial = user?.email ? user.email.charAt(0).toUpperCase() : 'U';
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
+    const avatarSrc = user?.profilePhotoUrl ? `${API_BASE}${user.profilePhotoUrl}` : undefined;
 
     return (
         <>
@@ -53,6 +55,7 @@ export default function ClientAvatarMenu() {
                     aria-expanded={open ? 'true' : undefined}
                 >
                     <Avatar
+                        src={avatarSrc}
                         sx={{
                             width: 36,
                             height: 36,

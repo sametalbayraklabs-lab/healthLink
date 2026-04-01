@@ -33,6 +33,7 @@ export interface UserInfo {
     expertId?: number;
     firstName?: string;
     displayName?: string;
+    profilePhotoUrl?: string;
 }
 
 export interface LoginResponse {

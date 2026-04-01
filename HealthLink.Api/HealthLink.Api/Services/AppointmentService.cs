@@ -1,4 +1,4 @@
-﻿using HealthLink.Api.Common;
+using HealthLink.Api.Common;
 using HealthLink.Api.Common.Errors;
 using HealthLink.Api.Data;
 using HealthLink.Api.Dtos.Appointments;
@@ -13,10 +13,12 @@ namespace HealthLink.Api.Services;
 public class AppointmentService : IAppointmentService
 {
     private readonly AppDbContext _db;
+    private readonly IEmailService _email;
 
-    public AppointmentService(AppDbContext db)
+    public AppointmentService(AppDbContext db, IEmailService email)
     {
         _db = db;
+        _email = email;
     }
 
     public async Task<AppointmentResponse> CreateAsync(
@@ -106,7 +108,28 @@ public class AppointmentService : IAppointmentService
         };
 
         _db.Appointments.Add(appointment);
+
+        // Deduct session from package immediately
+        package.UsedSessions++;
+
         await _db.SaveChangesAsync();
+
+        // Fetch data for email notifications before the request scope ends
+        var expertForEmail = await _db.Experts.Include(e => e.User).FirstOrDefaultAsync(e => e.Id == request.ExpertId);
+        var clientUserForEmail = await _db.Users.FirstOrDefaultAsync(u => u.Id == clientUserId);
+
+        // Send email notifications (fire-and-forget)
+        if (expertForEmail?.User != null && clientUserForEmail != null)
+        {
+            var clientName = $"{client.FirstName} {client.LastName}";
+            var expertName = expertForEmail.DisplayName ?? "Uzman";
+            var expertEmail = expertForEmail.User.Email;
+            var clientEmail = clientUserForEmail.Email;
+            var startTime = appointment.StartDateTime;
+
+            _ = _email.SendAppointmentCreatedAsync(clientEmail, clientName, expertName, startTime);
+            _ = _email.SendAppointmentCreatedAsync(expertEmail, expertName, expertName, startTime);
+        }
 
         return new AppointmentResponse
         {
@@ -138,12 +161,8 @@ public class AppointmentService : IAppointmentService
         if (!isClient && !isExpert)
             throw new BusinessException(ErrorCodes.AppointmentNotCancelable, "Unauthorized.");
 
-        var cancelLimitHours = int.Parse(
-            (await _db.SystemSettings.FirstAsync(x => x.Key == "Session.CancelLimitHours")).Value);
-
-        var hoursDiff = (appt.StartDateTime - DateTime.UtcNow).TotalHours;
-
-        if (hoursDiff >= cancelLimitHours && appt.ClientPackage != null)
+        // Refund the session back to the package
+        if (appt.ClientPackage != null)
         {
             appt.ClientPackage.UsedSessions =
                 Math.Max(0, appt.ClientPackage.UsedSessions - 1);
@@ -154,6 +173,19 @@ public class AppointmentService : IAppointmentService
             : AppointmentStatus.CancelledByExpert;
 
         await _db.SaveChangesAsync();
+
+        // Fetch data for cancellation email before scope ends
+        var expertForCancel = await _db.Experts.Include(e => e.User).FirstOrDefaultAsync(e => e.Id == appt.ExpertId);
+        var clientForCancel = await _db.Clients.FirstOrDefaultAsync(c => c.Id == appt.ClientId);
+        var clientUserForCancel = clientForCancel != null ? await _db.Users.FirstOrDefaultAsync(u => u.Id == clientForCancel.UserId) : null;
+        var cancelExpertName = expertForCancel?.DisplayName ?? "Uzman";
+        var cancelledBy = isClient ? $"{clientForCancel?.FirstName} {clientForCancel?.LastName}" : cancelExpertName;
+
+        // Send cancellation email to the other party (fire-and-forget)
+        if (isClient && expertForCancel?.User != null)
+            _ = _email.SendAppointmentCancelledAsync(expertForCancel.User.Email, cancelledBy, cancelExpertName, appt.StartDateTime);
+        else if (!isClient && clientUserForCancel != null)
+            _ = _email.SendAppointmentCancelledAsync(clientUserForCancel.Email, cancelledBy, cancelExpertName, appt.StartDateTime);
     }
 
     public async Task MarkIncompleteAsync(long expertUserId, long appointmentId)
@@ -193,12 +225,8 @@ public class AppointmentService : IAppointmentService
                 "Only expert can mark complete.");
 
         appt.Status = AppointmentStatus.Completed;
-        
-        // Increase used session count
-        if (appt.ClientPackage != null)
-        {
-            appt.ClientPackage.UsedSessions++;
-        }
+
+        // Session was already deducted at creation time, no change needed
 
         await _db.SaveChangesAsync();
     }

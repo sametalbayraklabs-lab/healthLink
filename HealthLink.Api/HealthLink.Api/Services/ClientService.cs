@@ -164,6 +164,7 @@ public class ClientService : IClientService
             Phone = client.User.Phone,
             BirthDate = client.BirthDate,
             Gender = client.Gender.ToApiString(),
+            ProfilePhotoUrl = client.ProfilePhotoUrl,
             CreatedAt = client.CreatedAt,
             UpdatedAt = client.UpdatedAt
         };
@@ -215,6 +216,7 @@ public class ClientService : IClientService
             LastName = client.LastName,
             BirthDate = client.BirthDate,
             Gender = client.Gender.ToApiString(),
+            ProfilePhotoUrl = client.ProfilePhotoUrl,
             CreatedAt = client.CreatedAt,
             UpdatedAt = client.UpdatedAt
         };

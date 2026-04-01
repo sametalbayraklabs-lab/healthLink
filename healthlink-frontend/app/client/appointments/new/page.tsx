@@ -132,6 +132,11 @@ export default function NewAppointmentPage() {
     const [appointmentWarning, setAppointmentWarning] = useState(false);
     const [messageWarning, setMessageWarning] = useState(false);
 
+    // Snackbar
+    const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'warning' | 'info' }>(
+        { open: false, message: '', severity: 'info' }
+    );
+
     useEffect(() => {
         fetchExperts();
         fetchMyPackages();
@@ -289,7 +294,7 @@ export default function NewAppointmentPage() {
 
     const handleCreateAppointment = async () => {
         if (!selectedExpert || !selectedDate || !selectedSlot || !selectedPackage) {
-            alert('Lütfen tüm alanları doldurun');
+            setSnackbar({ open: true, message: 'Lütfen tüm alanları doldurun.', severity: 'warning' });
             return;
         }
 
@@ -313,15 +318,15 @@ export default function NewAppointmentPage() {
             });
 
             if (response.ok) {
-                alert('Randevu başarıyla oluşturuldu!');
-                window.location.href = '/client/appointments';
+                setSnackbar({ open: true, message: 'Randevu başarıyla oluşturuldu!', severity: 'success' });
+                setTimeout(() => { window.location.href = '/client/appointments'; }, 1500);
             } else {
                 const error = await response.json();
-                alert(`Hata: ${error.message || 'Randevu oluşturulamadı'}`);
+                setSnackbar({ open: true, message: error.message || 'Randevu oluşturulamadı.', severity: 'error' });
             }
         } catch (error) {
             console.error('Error creating appointment:', error);
-            alert('Bir hata oluştu');
+            setSnackbar({ open: true, message: 'Bir hata oluştu.', severity: 'error' });
         }
     };
 
@@ -773,6 +778,23 @@ export default function NewAppointmentPage() {
             >
                 <Alert onClose={() => setMessageWarning(false)} severity="warning" variant="filled" sx={{ borderRadius: 2 }}>
                     Uzmanlarla mesajlaşabilmek için danışan olmalısınız.
+                </Alert>
+            </Snackbar>
+
+            {/* General Snackbar */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ borderRadius: 2, minWidth: 300 }}
+                >
+                    {snackbar.message}
                 </Alert>
             </Snackbar>
         </>

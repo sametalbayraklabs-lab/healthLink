@@ -57,6 +57,7 @@ interface ExpertClient {
     lastAppointmentDate?: string;
     birthDate?: string;
     gender?: string;
+    profilePhotoUrl?: string;
 }
 
 interface ClientAppointment {
@@ -370,6 +371,7 @@ export default function ClientDetailPage() {
 
                 <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
                     <Avatar
+                        src={client.profilePhotoUrl ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107'}${client.profilePhotoUrl}` : undefined}
                         sx={{
                             width: 56,
                             height: 56,

@@ -71,5 +71,33 @@ public class AuthController : ControllerBase
         }
         return Ok();
     }
+
+    [HttpPost("verify-email")]
+    public async Task<ActionResult> VerifyEmail(VerifyEmailRequestDto request)
+    {
+        await _auth.VerifyEmailAsync(request);
+        return Ok(new { success = true, message = "E-posta başarıyla doğrulandı." });
+    }
+
+    [HttpPost("resend-verification")]
+    public async Task<ActionResult> ResendVerification(ResendVerificationRequestDto request)
+    {
+        await _auth.ResendVerificationCodeAsync(request);
+        return Ok(new { success = true, message = "Doğrulama kodu tekrar gönderildi." });
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<ActionResult> ForgotPassword(ForgotPasswordRequestDto request)
+    {
+        await _auth.ForgotPasswordAsync(request);
+        return Ok(new { success = true, message = "Sıfırlama linki e-posta adresinize gönderildi." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<ActionResult> ResetPassword(ResetPasswordRequestDto request)
+    {
+        await _auth.ResetPasswordAsync(request);
+        return Ok(new { success = true, message = "Parolanız başarıyla değiştirildi." });
+    }
 }
 

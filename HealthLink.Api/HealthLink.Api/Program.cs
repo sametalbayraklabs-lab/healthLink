@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 using HealthLink.Api.Data;
@@ -84,6 +84,7 @@ builder.Services.AddCors(options =>
 
 // Auth services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<JwtTokenGenerator>();
 
 // API-1 Services
@@ -152,14 +153,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
 
-        // DEBUG: Log JWT events
+        // JWT Events for SignalR WebSocket support
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
-                var token = context.Request.Headers["Authorization"].FirstOrDefault();
-                Console.WriteLine($"[JWT] Authorization header: {token}");
-
                 // SignalR WebSocket support: read token from query string
                 var accessToken = context.Request.Query["access_token"];
                 var path = context.HttpContext.Request.Path;
@@ -168,16 +166,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Token = accessToken;
                 }
 
-                return Task.CompletedTask;
-            },
-            OnAuthenticationFailed = context =>
-            {
-                Console.WriteLine($"[JWT] Authentication failed: {context.Exception.Message}");
-                return Task.CompletedTask;
-            },
-            OnTokenValidated = context =>
-            {
-                Console.WriteLine($"[JWT] Token validated successfully. Claims count: {context.Principal?.Claims.Count()}");
                 return Task.CompletedTask;
             }
         };

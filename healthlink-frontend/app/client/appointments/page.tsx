@@ -24,6 +24,7 @@ import {
     IconButton,
     Tooltip,
     Paper,
+    Snackbar,
 } from '@mui/material';
 import api from '@/lib/api';
 import { formatDateTime } from '@/lib/utils';
@@ -54,6 +55,16 @@ export default function AppointmentsPage() {
     const [reviewError, setReviewError] = useState('');
     const [reviewSuccess, setReviewSuccess] = useState(false);
 
+    // Cancel confirmation dialog
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [cancelTargetId, setCancelTargetId] = useState<number | null>(null);
+    const [cancelLoading, setCancelLoading] = useState(false);
+
+    // Snackbar
+    const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>(
+        { open: false, message: '', severity: 'info' }
+    );
+
     useEffect(() => {
         fetchAppointments();
     }, []);
@@ -69,15 +80,25 @@ export default function AppointmentsPage() {
         }
     };
 
-    const handleCancel = async (id: number) => {
-        if (!confirm('Randevuyu iptal etmek istediğinizden emin misiniz?')) return;
+    const openCancelDialog = (id: number) => {
+        setCancelTargetId(id);
+        setCancelDialogOpen(true);
+    };
 
+    const handleCancelConfirm = async () => {
+        if (!cancelTargetId) return;
+        setCancelLoading(true);
         try {
-            await api.post(`/api/appointments/${id}/cancel`);
+            await api.post(`/api/appointments/${cancelTargetId}/cancel`);
+            setSnackbar({ open: true, message: 'Randevu başarıyla iptal edildi.', severity: 'success' });
             fetchAppointments();
         } catch (error) {
             console.error('Failed to cancel appointment:', error);
-            alert('Randevu iptal edilemedi');
+            setSnackbar({ open: true, message: 'Randevu iptal edilemedi.', severity: 'error' });
+        } finally {
+            setCancelLoading(false);
+            setCancelDialogOpen(false);
+            setCancelTargetId(null);
         }
     };
 
@@ -326,7 +347,7 @@ export default function AppointmentsPage() {
                                             <Button
                                                 size="small"
                                                 color="error"
-                                                onClick={() => handleCancel(appointment.id)}
+                                                onClick={() => openCancelDialog(appointment.id)}
                                                 sx={{ borderRadius: '10px', fontWeight: 500 }}
                                             >
                                                 İptal Et
@@ -560,6 +581,53 @@ export default function AppointmentsPage() {
                     </DialogActions>
                 )}
             </Dialog>
+
+            {/* Cancel Confirmation Dialog */}
+            <Dialog
+                open={cancelDialogOpen}
+                onClose={() => !cancelLoading && setCancelDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: 3 } }}
+            >
+                <DialogTitle sx={{ fontWeight: 600 }}>Randevu İptali</DialogTitle>
+                <DialogContent>
+                    <Typography>Randevuyu iptal etmek istediğinizden emin misiniz?</Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button
+                        onClick={() => setCancelDialogOpen(false)}
+                        disabled={cancelLoading}
+                        sx={{ borderRadius: '10px' }}
+                    >Vazgeç</Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleCancelConfirm}
+                        disabled={cancelLoading}
+                        sx={{ borderRadius: '10px', px: 3 }}
+                    >
+                        {cancelLoading ? <CircularProgress size={20} /> : 'İptal Et'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ borderRadius: 2, minWidth: 300 }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 }

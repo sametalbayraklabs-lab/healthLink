@@ -34,6 +34,11 @@ function LoginForm() {
         try {
             await login({ email, password }, returnTo || undefined);
         } catch (err: any) {
+            const errorCode = err.response?.data?.code;
+            if (errorCode === 'EMAIL_NOT_VERIFIED') {
+                router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+                return;
+            }
             setError(err.response?.data?.message || 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
         } finally {
             setLoading(false);
@@ -97,6 +102,12 @@ function LoginForm() {
                             {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
                         </Button>
                     </form>
+
+                    <Box sx={{ textAlign: 'right', mt: 1 }}>
+                        <MuiLink component={Link} href="/auth/forgot-password" variant="body2">
+                            Parolamı Unuttum
+                        </MuiLink>
+                    </Box>
 
                     <Box sx={{ mt: 3, textAlign: 'center' }}>
                         <Typography variant="body2" color="text.secondary">

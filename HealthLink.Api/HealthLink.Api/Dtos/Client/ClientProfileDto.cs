@@ -10,6 +10,7 @@ public class ClientProfileDto
     public string? Phone { get; set; }
     public DateTime? BirthDate { get; set; }
     public string? Gender { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }

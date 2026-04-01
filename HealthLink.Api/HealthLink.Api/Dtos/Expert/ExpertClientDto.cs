@@ -10,4 +10,5 @@ public class ExpertClientDto
     public DateTime? LastAppointmentDate { get; set; }
     public DateTime? BirthDate { get; set; }
     public string? Gender { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
 }

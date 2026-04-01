@@ -15,7 +15,9 @@ import {
     DialogActions,
     TextField,
     MenuItem,
-    Chip
+    Chip,
+    Snackbar,
+    Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -55,6 +57,11 @@ export default function TimeOffManager({ onError, onSuccess }: Props) {
         endTime: '',
         reason: ''
     });
+
+    // Delete confirmation dialog
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     useEffect(() => {
         fetchExceptions();
@@ -130,11 +137,16 @@ export default function TimeOffManager({ onError, onSuccess }: Props) {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Bu izni silmek istediğinizden emin misiniz?')) return;
+    const openDeleteDialog = (id: number) => {
+        setDeleteTargetId(id);
+        setDeleteDialogOpen(true);
+    };
 
+    const handleDeleteConfirm = async () => {
+        if (!deleteTargetId) return;
+        setDeleteLoading(true);
         try {
-            const response = await fetch(`${API_URL}/api/expert/schedule/exceptions/${id}`, {
+            const response = await fetch(`${API_URL}/api/expert/schedule/exceptions/${deleteTargetId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -147,6 +159,10 @@ export default function TimeOffManager({ onError, onSuccess }: Props) {
             onSuccess('İzin silindi');
         } catch (err) {
             onError(err instanceof Error ? err.message : 'Bir hata oluştu');
+        } finally {
+            setDeleteLoading(false);
+            setDeleteDialogOpen(false);
+            setDeleteTargetId(null);
         }
     };
 
@@ -223,7 +239,7 @@ export default function TimeOffManager({ onError, onSuccess }: Props) {
                                     <IconButton size="small" onClick={() => handleOpenDialog(exception)}>
                                         <EditIcon fontSize="small" />
                                     </IconButton>
-                                    <IconButton size="small" onClick={() => handleDelete(exception.id)} color="error">
+                                    <IconButton size="small" onClick={() => openDeleteDialog(exception.id)} color="error">
                                         <DeleteIcon fontSize="small" />
                                     </IconButton>
                                 </Box>
@@ -292,6 +308,36 @@ export default function TimeOffManager({ onError, onSuccess }: Props) {
                     <Button onClick={handleCloseDialog}>İptal</Button>
                     <Button onClick={handleSave} variant="contained">
                         Kaydet
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => !deleteLoading && setDeleteDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: 3 } }}
+            >
+                <DialogTitle sx={{ fontWeight: 600 }}>İzin Silme</DialogTitle>
+                <DialogContent>
+                    <Typography>Bu izni silmek istediğinizden emin misiniz?</Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button
+                        onClick={() => setDeleteDialogOpen(false)}
+                        disabled={deleteLoading}
+                        sx={{ borderRadius: '10px' }}
+                    >Vazgeç</Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleDeleteConfirm}
+                        disabled={deleteLoading}
+                        sx={{ borderRadius: '10px', px: 3 }}
+                    >
+                        {deleteLoading ? <CircularProgress size={20} /> : 'Sil'}
                     </Button>
                 </DialogActions>
             </Dialog>

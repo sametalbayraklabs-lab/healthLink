@@ -16,4 +16,5 @@ public class UserInfoDto
     public long? ExpertId { get; set; }
     public string? FirstName { get; set; }
     public string? DisplayName { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
 }

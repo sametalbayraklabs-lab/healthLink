@@ -8,6 +8,7 @@ export interface ClientProfile {
     gender?: string;
     birthDate?: string;
     isActive: boolean;
+    profilePhotoUrl?: string;
     createdAt: string;
     updatedAt?: string;
 }

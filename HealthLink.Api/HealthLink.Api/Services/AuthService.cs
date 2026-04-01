@@ -1,4 +1,4 @@
-﻿using HealthLink.Api.Common;
+using HealthLink.Api.Common;
 using HealthLink.Api.Common.Errors;
 using HealthLink.Api.Data;
 using HealthLink.Api.Dtos.Auth;
@@ -14,11 +14,15 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _db;
     private readonly JwtTokenGenerator _jwt;
+    private readonly IEmailService _email;
+    private readonly IConfiguration _config;
 
-    public AuthService(AppDbContext db, JwtTokenGenerator jwt)
+    public AuthService(AppDbContext db, JwtTokenGenerator jwt, IEmailService email, IConfiguration config)
     {
         _db = db;
         _jwt = jwt;
+        _email = email;
+        _config = config;
     }
 
     public async Task<RegisterClientResponseDto> RegisterClientAsync(RegisterClientRequestDto request)
@@ -37,7 +41,8 @@ public class AuthService : IAuthService
         // Hash password
         var (hash, salt) = PasswordHasher.HashPassword(request.Password);
 
-        // Create User
+        // Create User with verification code
+        var verificationCode = new Random().Next(100000, 999999).ToString();
         var user = new User
         {
             Email = request.Email,
@@ -45,6 +50,9 @@ public class AuthService : IAuthService
             PasswordSalt = salt,
             Phone = request.Phone,
             IsActive = true,
+            EmailVerified = false,
+            EmailVerificationCode = verificationCode,
+            EmailVerificationCodeExpiry = DateTime.UtcNow.AddMinutes(15),
             CreatedAt = DateTime.UtcNow
         };
 
@@ -68,6 +76,9 @@ public class AuthService : IAuthService
 
         _db.Clients.Add(client);
         await _db.SaveChangesAsync();
+
+        // Send verification email (fire-and-forget)
+        _ = _email.SendVerificationCodeAsync(user.Email, verificationCode);
 
         return new RegisterClientResponseDto
         {
@@ -106,7 +117,8 @@ public class AuthService : IAuthService
         // Hash password
         var (hash, salt) = PasswordHasher.HashPassword(request.Password);
 
-        // Create User
+        // Create User with verification code
+        var verificationCode = new Random().Next(100000, 999999).ToString();
         var user = new User
         {
             Email = request.Email,
@@ -114,6 +126,9 @@ public class AuthService : IAuthService
             PasswordSalt = salt,
             Phone = request.Phone,
             IsActive = true,
+            EmailVerified = false,
+            EmailVerificationCode = verificationCode,
+            EmailVerificationCodeExpiry = DateTime.UtcNow.AddMinutes(15),
             CreatedAt = DateTime.UtcNow
         };
 
@@ -136,6 +151,9 @@ public class AuthService : IAuthService
 
         _db.Experts.Add(expert);
         await _db.SaveChangesAsync();
+
+        // Send verification email (fire-and-forget)
+        _ = _email.SendVerificationCodeAsync(user.Email, verificationCode);
 
         return new RegisterExpertResponseDto
         {
@@ -219,6 +237,15 @@ public class AuthService : IAuthService
             );
         }
 
+        if (!user.EmailVerified)
+        {
+            throw new BusinessException(
+                "EMAIL_NOT_VERIFIED",
+                "E-posta adresiniz doğrulanmamış. Lütfen e-postanıza gönderilen kodu girin.",
+                403
+            );
+        }
+
         var valid = PasswordHasher.VerifyPassword(
             request.Password,
             user.PasswordHash,
@@ -276,7 +303,8 @@ public class AuthService : IAuthService
                 ClientId = clientId,
                 ExpertId = expertId,
                 FirstName = client?.FirstName,
-                DisplayName = expert?.DisplayName
+                DisplayName = expert?.DisplayName,
+                ProfilePhotoUrl = admin?.ProfilePhotoUrl ?? expert?.ProfilePhotoUrl ?? client?.ProfilePhotoUrl
             }
         };
     }
@@ -315,6 +343,81 @@ public class AuthService : IAuthService
         user.PasswordSalt = salt;
         user.UpdatedAt = DateTime.UtcNow;
 
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task VerifyEmailAsync(VerifyEmailRequestDto request)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (user == null)
+            throw new BusinessException(ErrorCodes.USER_NOT_FOUND, "Kullanıcı bulunamadı.", 404);
+
+        if (user.EmailVerified)
+            throw new BusinessException("ALREADY_VERIFIED", "E-posta zaten doğrulanmış.", 400);
+
+        if (user.EmailVerificationCode != request.Code)
+            throw new BusinessException("INVALID_CODE", "Doğrulama kodu hatalı.", 400);
+
+        if (user.EmailVerificationCodeExpiry < DateTime.UtcNow)
+            throw new BusinessException("CODE_EXPIRED", "Doğrulama kodunun süresi dolmuş. Lütfen yeni kod talep edin.", 400);
+
+        user.EmailVerified = true;
+        user.EmailVerificationCode = null;
+        user.EmailVerificationCodeExpiry = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task ResendVerificationCodeAsync(ResendVerificationRequestDto request)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (user == null)
+            throw new BusinessException(ErrorCodes.USER_NOT_FOUND, "Kullanıcı bulunamadı.", 404);
+
+        if (user.EmailVerified)
+            throw new BusinessException("ALREADY_VERIFIED", "E-posta zaten doğrulanmış.", 400);
+
+        var code = new Random().Next(100000, 999999).ToString();
+        user.EmailVerificationCode = code;
+        user.EmailVerificationCodeExpiry = DateTime.UtcNow.AddMinutes(15);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _ = _email.SendVerificationCodeAsync(user.Email, code);
+    }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordRequestDto request)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        // Don't reveal if user exists — always return success
+        if (user == null) return;
+
+        var token = Guid.NewGuid().ToString("N");
+        user.PasswordResetToken = token;
+        user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var frontendUrl = _config["FrontendUrl"] ?? "http://localhost:3000";
+        var resetLink = $"{frontendUrl}/auth/reset-password?token={token}";
+        _ = _email.SendPasswordResetLinkAsync(user.Email, resetLink);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequestDto request)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == request.Token);
+        if (user == null)
+            throw new BusinessException("INVALID_TOKEN", "Geçersiz veya süresi dolmuş sıfırlama bağlantısı.", 400);
+
+        if (user.PasswordResetTokenExpiry < DateTime.UtcNow)
+            throw new BusinessException("TOKEN_EXPIRED", "Sıfırlama bağlantısının süresi dolmuş. Lütfen yeni link talep edin.", 400);
+
+        var (hash, salt) = PasswordHasher.HashPassword(request.NewPassword);
+        user.PasswordHash = hash;
+        user.PasswordSalt = salt;
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiry = null;
+        user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
     }
 }

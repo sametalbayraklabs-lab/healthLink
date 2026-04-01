@@ -1,4 +1,4 @@
-﻿using HealthLink.Api.Common;
+using HealthLink.Api.Common;
 using HealthLink.Api.Common.Errors;
 using HealthLink.Api.Data;
 using HealthLink.Api.Dtos.Expert;
@@ -504,7 +504,8 @@ namespace HealthLink.Api.Services
                     CompletedAppointments = g.Count(a => a.Status == Entities.Enums.AppointmentStatus.Completed),
                     LastAppointmentDate = g.Max(a => a.StartDateTime),
                     BirthDate = g.First().Client.BirthDate,
-                    Gender = g.First().Client.Gender.HasValue ? g.First().Client.Gender.Value.ToString() : null
+                    Gender = g.First().Client.Gender.HasValue ? g.First().Client.Gender.Value.ToString() : null,
+                    ProfilePhotoUrl = g.First().Client.ProfilePhotoUrl
                 })
                 .ToList();
 

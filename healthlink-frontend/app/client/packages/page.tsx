@@ -118,7 +118,7 @@ export default function PackagesPage() {
                             {activePackages.map((clientPkg) => {
                                 const pkg = clientPkg.servicePackage;
                                 const remainingSessions = clientPkg.totalSessions - clientPkg.usedSessions;
-                                const progress = (clientPkg.usedSessions / clientPkg.totalSessions) * 100;
+                                const progress = (remainingSessions / clientPkg.totalSessions) * 100;
 
                                 return (
                                     <Card key={clientPkg.id} sx={{
@@ -152,10 +152,10 @@ export default function PackagesPage() {
                                             <Box sx={{ mt: 3 }}>
                                                 <Box display="flex" justifyContent="space-between" mb={1}>
                                                     <Typography variant="body2" fontWeight={500} color="text.secondary">
-                                                        Seans Kullanımı
+                                                        Kalan Seans
                                                     </Typography>
                                                     <Typography variant="body2" color="primary.main" fontWeight={700}>
-                                                        {clientPkg.usedSessions} / {clientPkg.totalSessions}
+                                                        {remainingSessions} / {clientPkg.totalSessions}
                                                     </Typography>
                                                 </Box>
                                                 <LinearProgress

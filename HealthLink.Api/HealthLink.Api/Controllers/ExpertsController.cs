@@ -108,6 +108,13 @@ public class ExpertsController : ControllerBase
         var uploadsDir = Path.Combine(webRoot, "uploads", "photos");
         Directory.CreateDirectory(uploadsDir);
 
+        // Delete old photo if exists
+        if (!string.IsNullOrEmpty(expert.ProfilePhotoUrl))
+        {
+            var oldPath = Path.Combine(webRoot, expert.ProfilePhotoUrl.TrimStart('/'));
+            if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+        }
+
         var ext = Path.GetExtension(file.FileName);
         var fileName = $"expert_{expert.Id}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{ext}";
         var filePath = Path.Combine(uploadsDir, fileName);
@@ -122,6 +129,28 @@ public class ExpertsController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(new { profilePhotoUrl = expert.ProfilePhotoUrl });
+    }
+
+    [HttpDelete("me/photo")]
+    [Authorize(Roles = "Expert")]
+    public async Task<ActionResult> DeletePhoto()
+    {
+        var userId = Common.UserHelper.GetUserId(User);
+        var expert = await _db.Experts.FirstOrDefaultAsync(e => e.UserId == userId);
+        if (expert == null) return NotFound();
+
+        if (!string.IsNullOrEmpty(expert.ProfilePhotoUrl))
+        {
+            var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+            var filePath = Path.Combine(webRoot, expert.ProfilePhotoUrl.TrimStart('/'));
+            if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+
+            expert.ProfilePhotoUrl = null;
+            expert.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+
+        return NoContent();
     }
 
     [HttpPut("{id}/approve")]

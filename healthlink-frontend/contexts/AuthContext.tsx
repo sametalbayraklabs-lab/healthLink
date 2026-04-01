@@ -14,6 +14,7 @@ interface AuthContextType {
     logout: () => void;
     isAuthenticated: boolean;
     hasRole: (role: string) => boolean;
+    updateProfilePhoto: (url: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,14 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const registerClient = async (data: RegisterClientRequest) => {
         try {
-            const response = await api.post<LoginResponse>('/api/auth/register-client', data);
-            const { accessToken, user: userData } = response.data;
-
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('user', JSON.stringify(userData));
-            setUser(userData);
-
-            router.push('/client/dashboard');
+            await api.post('/api/auth/register-client', data);
+            // Redirect to email verification page
+            router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
         } catch (error) {
             console.error('Registration failed:', error);
             throw error;
@@ -107,14 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const registerExpert = async (data: RegisterExpertRequest) => {
         try {
-            const response = await api.post<LoginResponse>('/api/auth/register-expert', data);
-            const { accessToken, user: userData } = response.data;
-
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('user', JSON.stringify(userData));
-            setUser(userData);
-
-            router.push('/expert/dashboard');
+            await api.post('/api/auth/register-expert', data);
+            // Redirect to email verification page
+            router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
         } catch (error) {
             console.error('Registration failed:', error);
             throw error;
@@ -132,6 +123,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return user?.roles.includes(role) ?? false;
     };
 
+    const updateProfilePhoto = (url: string | null) => {
+        if (!user) return;
+        const updated = { ...user, profilePhotoUrl: url ?? undefined };
+        setUser(updated);
+        localStorage.setItem('user', JSON.stringify(updated));
+    };
+
     const value: AuthContextType = {
         user,
         isLoading,
@@ -141,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         isAuthenticated: !!user,
         hasRole,
+        updateProfilePhoto,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
