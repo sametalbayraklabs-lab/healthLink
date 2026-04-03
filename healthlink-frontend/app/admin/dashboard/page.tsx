@@ -84,7 +84,7 @@ export default function AdminDashboard() {
     return (
         <Container maxWidth="lg">
             <Typography variant="h4" gutterBottom fontWeight={600}>
-                Admin Dashboard
+                Yönetim Paneli
             </Typography>
             <Typography variant="body1" color="text.secondary" paragraph>
                 Sistem genelinde istatistikler ve yönetim

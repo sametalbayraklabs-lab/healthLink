@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
@@ -32,10 +33,23 @@ export default function Navbar() {
         return null;
     };
 
+    const getDashboardPath = () => {
+        if (!user) return null;
+        if (user.roles.includes('Admin')) return '/admin/dashboard';
+        if (user.roles.includes('Expert')) return '/expert/dashboard';
+        if (user.roles.includes('Client')) return '/client/dashboard';
+        return null;
+    };
+
     const navLinks = [
         { label: 'Tarifler', icon: <RestaurantMenuIcon />, path: '/recipes' },
         { label: 'Makaleler', icon: <ArticleIcon />, path: '/articles' },
     ];
+
+    const dashboardPath = getDashboardPath();
+    if (dashboardPath) {
+        navLinks.push({ label: 'Panelim', icon: <DashboardIcon />, path: dashboardPath });
+    }
 
     const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
 

@@ -128,7 +128,7 @@ export default function ClientDashboard() {
         <Container maxWidth="lg">
             <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" gutterBottom fontWeight={700} sx={{ letterSpacing: '-0.01em' }}>
-                    Dashboard
+                    Panelim
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
                     Hoş geldiniz! İşte hesabınızın özeti.

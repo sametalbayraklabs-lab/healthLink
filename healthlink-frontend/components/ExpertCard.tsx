@@ -72,7 +72,7 @@ export default function ExpertCard({ expert, onProfileClick, onAppointmentClick,
                 <Stack direction="row" spacing={2} alignItems="center" mb={2.5}>
                     {expert.profilePhotoUrl ? (
                         <Avatar
-                            src={`${typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107') : ''}${expert.profilePhotoUrl}`}
+                            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107'}${expert.profilePhotoUrl}`}
                             sx={{
                                 width: 56,
                                 height: 56,

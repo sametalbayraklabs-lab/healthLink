@@ -10,7 +10,7 @@ import ExpertCard, { ExpertCardData } from '@/components/ExpertCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 
-const API_URL = 'http://localhost:5107';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
 
 // Static expert types — matches backend enum (same as landing page)
 const EXPERT_TYPES = [

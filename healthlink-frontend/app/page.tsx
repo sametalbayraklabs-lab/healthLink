@@ -18,6 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import ExpertCard, { ExpertCardData, getExpertTypeLabel } from '@/components/ExpertCard';
 import { useChat } from '@/contexts/ChatContext';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5107';
+
 interface Expert {
   id: number;
   displayName: string;
@@ -59,8 +61,8 @@ export default function Home() {
     const fetchData = async () => {
       try {
         const [expertsResponse, specsResponse] = await Promise.all([
-          fetch('http://localhost:5107/api/experts'),
-          fetch('http://localhost:5107/api/specializations')
+          fetch(`${API_URL}/api/experts`),
+          fetch(`${API_URL}/api/specializations`)
         ]);
 
         if (expertsResponse.ok && specsResponse.ok) {
