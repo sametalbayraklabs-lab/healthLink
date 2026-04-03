@@ -360,7 +360,7 @@ export default function AdminAppointmentsPage() {
                     ) : selectedAppointment && (
                         <Box mt={2}>
                             <Grid container spacing={3}>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Danışan</Typography>
                                     <Typography variant="body1" fontWeight="medium">
                                         {selectedAppointment.clientName}
@@ -369,7 +369,7 @@ export default function AdminAppointmentsPage() {
                                         {selectedAppointment.clientEmail}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Uzman</Typography>
                                     <Typography variant="body1" fontWeight="medium">
                                         {selectedAppointment.expertName}
@@ -378,23 +378,23 @@ export default function AdminAppointmentsPage() {
                                         {selectedAppointment.expertEmail}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Uzman Tipi</Typography>
                                     <Typography variant="body1">{getExpertTypeLabel(selectedAppointment.expertType)}</Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Seans Tipi</Typography>
                                     <Typography variant="body1">{getServiceTypeLabel(selectedAppointment.serviceType)}</Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Başlangıç</Typography>
                                     <Typography variant="body1">{formatDateTime(selectedAppointment.startDateTime)}</Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Bitiş</Typography>
                                     <Typography variant="body1">{formatDateTime(selectedAppointment.endDateTime)}</Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Durum</Typography>
                                     <Chip
                                         label={getStatusLabel(selectedAppointment.status)}
@@ -403,13 +403,13 @@ export default function AdminAppointmentsPage() {
                                     />
                                 </Grid>
                                 {selectedAppointment.packageName && (
-                                    <Grid item xs={12} md={6}>
+                                    <Grid size={{ xs: 12, md: 6 }}>
                                         <Typography variant="subtitle2" color="text.secondary">Paket</Typography>
                                         <Typography variant="body1">{selectedAppointment.packageName}</Typography>
                                     </Grid>
                                 )}
                                 {selectedAppointment.meetingUrl && (
-                                    <Grid item xs={12}>
+                                    <Grid size={12}>
                                         <Typography variant="subtitle2" color="text.secondary">Video Görüşme Linki</Typography>
                                         <Box display="flex" alignItems="center" gap={1}>
                                             <VideocamIcon color="primary" />
@@ -419,7 +419,7 @@ export default function AdminAppointmentsPage() {
                                         </Box>
                                     </Grid>
                                 )}
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Oluşturulma Tarihi</Typography>
                                     <Typography variant="body1">
                                         {new Date(selectedAppointment.createdAt).toLocaleString('tr-TR')}

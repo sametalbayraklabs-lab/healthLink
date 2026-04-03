@@ -1,4 +1,4 @@
-﻿using HealthLink.Api.Entities;
+using HealthLink.Api.Entities;
 using HealthLink.Api.Entities.Enums;
 
 using Microsoft.EntityFrameworkCore;
@@ -44,6 +44,7 @@ namespace HealthLink.Api.Data
         public DbSet<FavoriteExpert> FavoriteExperts => Set<FavoriteExpert>();
         public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
         public DbSet<SupportMessage> SupportMessages => Set<SupportMessage>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
 
 
@@ -1176,6 +1177,9 @@ namespace HealthLink.Api.Data
                 entity.HasIndex(x => x.Date);
             });
 
+            // Refresh Token configuration
+            ConfigureRefreshToken(modelBuilder);
+
         }
 
         public override async Task<int> SaveChangesAsync(
@@ -1206,5 +1210,43 @@ namespace HealthLink.Api.Data
         }
 
 
+        // RefreshToken configuration
+        private static void ConfigureRefreshToken(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.ToTable("RefreshTokens");
+
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.Token)
+                      .IsRequired()
+                      .HasMaxLength(256);
+
+                entity.HasIndex(x => x.Token)
+                      .IsUnique();
+
+                entity.Property(x => x.ExpiresAt)
+                      .IsRequired();
+
+                entity.Property(x => x.CreatedAt)
+                      .IsRequired();
+
+                entity.Property(x => x.RevokedAt)
+                      .IsRequired(false);
+
+                entity.Property(x => x.ReplacedByToken)
+                      .HasMaxLength(256)
+                      .IsRequired(false);
+
+                entity.HasOne(x => x.User)
+                      .WithMany()
+                      .HasForeignKey(x => x.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Index for cleanup queries
+                entity.HasIndex(x => new { x.UserId, x.RevokedAt });
+            });
+        }
     }
 }

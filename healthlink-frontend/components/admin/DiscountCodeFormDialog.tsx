@@ -177,7 +177,7 @@ export default function DiscountCodeFormDialog({
             </DialogTitle>
             <DialogContent>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                             fullWidth
                             label="Kod"
@@ -189,7 +189,7 @@ export default function DiscountCodeFormDialog({
                         />
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <FormControl fullWidth required disabled={!!discountCode}>
                             <InputLabel>İndirim Tipi</InputLabel>
                             <Select
@@ -206,7 +206,7 @@ export default function DiscountCodeFormDialog({
                         </FormControl>
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                         <TextField
                             fullWidth
                             label="Açıklama"
@@ -217,7 +217,7 @@ export default function DiscountCodeFormDialog({
                         />
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                             fullWidth
                             label={formData.discountType === 'Percentage' ? 'İndirim Yüzdesi' : 'İndirim Tutarı'}
@@ -229,7 +229,7 @@ export default function DiscountCodeFormDialog({
                         />
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                             fullWidth
                             label="Maksimum Kullanım Sayısı"
@@ -241,7 +241,7 @@ export default function DiscountCodeFormDialog({
                         />
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                             fullWidth
                             label="Başlangıç Tarihi"
@@ -253,7 +253,7 @@ export default function DiscountCodeFormDialog({
                         />
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                             fullWidth
                             label="Bitiş Tarihi"
@@ -265,7 +265,7 @@ export default function DiscountCodeFormDialog({
                         />
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <FormControl fullWidth required disabled={!!discountCode}>
                             <InputLabel>Geçerli Uzman Tipi</InputLabel>
                             <Select
@@ -282,7 +282,7 @@ export default function DiscountCodeFormDialog({
                         </FormControl>
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <FormControlLabel
                             control={
                                 <Switch

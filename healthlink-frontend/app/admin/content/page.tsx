@@ -448,33 +448,33 @@ export default function AdminContentPage() {
                     ) : selectedContent && (
                         <Box mt={2}>
                             <Grid container spacing={2}>
-                                <Grid item xs={12}>
+                                <Grid size={12}>
                                     <Typography variant="h6">{selectedContent.title}</Typography>
                                     {selectedContent.subTitle && (
                                         <Typography variant="subtitle1" color="text.secondary">{selectedContent.subTitle}</Typography>
                                     )}
                                 </Grid>
-                                <Grid item xs={6} md={3}>
+                                <Grid size={{ xs: 6, md: 3 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Tip</Typography>
                                     <Typography>{getTypeLabel(selectedContent.type)}</Typography>
                                 </Grid>
-                                <Grid item xs={6} md={3}>
+                                <Grid size={{ xs: 6, md: 3 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Durum</Typography>
                                     <Chip label={getStatusLabel(selectedContent.status)} color={getStatusColor(selectedContent.status)} size="small" />
                                 </Grid>
-                                <Grid item xs={4} md={2}>
+                                <Grid size={{ xs: 4, md: 2 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Görüntülenme</Typography>
                                     <Typography fontWeight="bold">{selectedContent.viewCount}</Typography>
                                 </Grid>
-                                <Grid item xs={4} md={2}>
+                                <Grid size={{ xs: 4, md: 2 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Beğeni</Typography>
                                     <Typography fontWeight="bold" color="success.main">{selectedContent.likeCount}</Typography>
                                 </Grid>
-                                <Grid item xs={4} md={2}>
+                                <Grid size={{ xs: 4, md: 2 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Beğenmeme</Typography>
                                     <Typography fontWeight="bold" color="error.main">{selectedContent.dislikeCount}</Typography>
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={12}>
                                     <Typography variant="subtitle2" color="text.secondary">İçerik</Typography>
                                     <Paper sx={{ p: 2, maxHeight: 200, overflow: 'auto' }}>
                                         <div dangerouslySetInnerHTML={{ __html: selectedContent.bodyHtml }} />
@@ -510,16 +510,16 @@ export default function AdminContentPage() {
                 <DialogContent>
                     <Box mt={2}>
                         <Grid container spacing={2}>
-                            <Grid item xs={12} md={8}>
+                            <Grid size={{ xs: 12, md: 8 }}>
                                 <TextField fullWidth label="Başlık" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
                             </Grid>
-                            <Grid item xs={12} md={4}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <TextField fullWidth label="Slug" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} required />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <TextField fullWidth label="Alt Başlık" value={formData.subTitle} onChange={(e) => setFormData({ ...formData, subTitle: e.target.value })} />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={6}>
                                 <FormControl fullWidth>
                                     <InputLabel>Tip</InputLabel>
                                     <Select value={formData.type} label="Tip" onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
@@ -529,19 +529,19 @@ export default function AdminContentPage() {
                                     </Select>
                                 </FormControl>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={6}>
                                 <TextField fullWidth label="Kategori" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <TextField fullWidth label="Kapak Resmi URL" value={formData.coverImageUrl} onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })} />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <TextField fullWidth multiline rows={6} label="İçerik (HTML)" value={formData.bodyHtml} onChange={(e) => setFormData({ ...formData, bodyHtml: e.target.value })} required />
                             </Grid>
-                            <Grid item xs={12} md={6}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <TextField fullWidth label="SEO Başlık" value={formData.seoTitle} onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })} />
                             </Grid>
-                            <Grid item xs={12} md={6}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <TextField fullWidth label="SEO Açıklama" value={formData.seoDescription} onChange={(e) => setFormData({ ...formData, seoDescription: e.target.value })} />
                             </Grid>
                         </Grid>

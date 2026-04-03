@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
     Box, Typography, TextField, Button, Alert, Paper, CircularProgress,
@@ -11,6 +11,14 @@ import api from '@/lib/api';
 const ACCENT = '#1E8F8A';
 
 export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={<Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CircularProgress sx={{ color: ACCENT }} /></Box>}>
+            <ResetPasswordContent />
+        </Suspense>
+    );
+}
+
+function ResetPasswordContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const token = searchParams.get('token') || '';

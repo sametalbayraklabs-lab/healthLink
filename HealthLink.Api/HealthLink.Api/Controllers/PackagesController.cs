@@ -41,7 +41,7 @@ public class PackagesController : ControllerBase
     /// Create new package (Admin only)
     /// </summary>
     [HttpPost]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ServicePackageDto>> Create([FromBody] CreateServicePackageRequest request)
     {
         var package = await _packageService.CreatePackageAsync(request);
@@ -52,7 +52,7 @@ public class PackagesController : ControllerBase
     /// Update package (Admin only)
     /// </summary>
     [HttpPut("{id}")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ServicePackageDto>> Update(long id, [FromBody] UpdateServicePackageRequest request)
     {
         var package = await _packageService.UpdatePackageAsync(id, request);
@@ -63,7 +63,7 @@ public class PackagesController : ControllerBase
     /// Delete package (Admin only)
     /// </summary>
     [HttpDelete("{id}")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(long id)
     {
         await _packageService.DeletePackageAsync(id);

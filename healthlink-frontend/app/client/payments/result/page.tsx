@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import {
     Container,
     Typography,
@@ -16,6 +16,14 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 export default function PaymentResultPage() {
+    return (
+        <Suspense fallback={<Box display="flex" justifyContent="center" alignItems="center" minHeight="400px"><CircularProgress /></Box>}>
+            <PaymentResultContent />
+        </Suspense>
+    );
+}
+
+function PaymentResultContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const status = searchParams.get('status');

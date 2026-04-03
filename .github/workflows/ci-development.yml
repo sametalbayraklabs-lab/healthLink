@@ -1,0 +1,44 @@
+name: CI Development Pipeline
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Backend .NET Build Check
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies (Backend)
+      run: dotnet restore HealthLink.Api/HealthLink.Api/HealthLink.Api.csproj
+
+    - name: Build (Backend)
+      run: dotnet build HealthLink.Api/HealthLink.Api/HealthLink.Api.csproj --configuration Release --no-restore
+
+    # Frontend Node.js Build Check
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies (Frontend)
+      working-directory: ./healthlink-frontend
+      run: npm ci
+
+    - name: Build Validation (Frontend)
+      working-directory: ./healthlink-frontend
+      run: npm run build

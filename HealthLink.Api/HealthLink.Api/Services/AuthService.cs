@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using HealthLink.Api.Common;
 using HealthLink.Api.Common.Errors;
 using HealthLink.Api.Data;
@@ -288,12 +289,16 @@ public class AuthService : IAuthService
             // Note: IsSystemAdmin flag available for future use
         }
 
-        var (token, expiresAt) = _jwt.GenerateToken(user.Id, user.Email, roles, clientId, expertId);
+        var (accessToken, expiresAt) = _jwt.GenerateToken(user.Id, user.Email, roles, clientId, expertId);
         var expiresIn = (int)(expiresAt - DateTime.UtcNow).TotalSeconds;
+
+        // Create refresh token
+        var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
         return new LoginResponseDto
         {
-            AccessToken = token,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken.Token,
             ExpiresIn = expiresIn,
             User = new UserInfoDto
             {
@@ -419,5 +424,89 @@ public class AuthService : IAuthService
         user.PasswordResetTokenExpiry = null;
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+    }
+
+    public async Task<RefreshTokenResponseDto> RefreshTokenAsync(string refreshToken)
+    {
+        var storedToken = await _db.RefreshTokens
+            .Include(rt => rt.User)
+            .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+
+        if (storedToken == null)
+            throw new BusinessException("INVALID_REFRESH_TOKEN", "Geçersiz refresh token.", 401);
+
+        if (storedToken.IsRevoked)
+            throw new BusinessException("TOKEN_REVOKED", "Token iptal edilmiş.", 401);
+
+        if (storedToken.IsExpired)
+            throw new BusinessException("TOKEN_EXPIRED", "Token süresi dolmuş. Lütfen tekrar giriş yapın.", 401);
+
+        var user = storedToken.User;
+        if (!user.IsActive)
+            throw new BusinessException(ErrorCodes.USER_INACTIVE, "Hesabınız aktif değil.", 403);
+
+        // Determine roles and IDs
+        var roles = new List<string>();
+        long? clientId = null;
+        long? expertId = null;
+
+        var client = await _db.Clients.FirstOrDefaultAsync(c => c.UserId == user.Id);
+        if (client != null) { roles.Add("Client"); clientId = client.Id; }
+
+        var expert = await _db.Experts.FirstOrDefaultAsync(e => e.UserId == user.Id);
+        if (expert != null) { roles.Add("Expert"); expertId = expert.Id; }
+
+        var admin = await _db.Admins.FirstOrDefaultAsync(a => a.UserId == user.Id);
+        if (admin != null) { roles.Add("Admin"); }
+
+        // Generate new access token
+        var (newAccessToken, expiresAt) = _jwt.GenerateToken(user.Id, user.Email, roles, clientId, expertId);
+        var expiresIn = (int)(expiresAt - DateTime.UtcNow).TotalSeconds;
+
+        // Rotate refresh token: revoke old, create new
+        var newRefreshToken = await CreateRefreshTokenAsync(user.Id);
+        storedToken.RevokedAt = DateTime.UtcNow;
+        storedToken.ReplacedByToken = newRefreshToken.Token;
+        await _db.SaveChangesAsync();
+
+        return new RefreshTokenResponseDto
+        {
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken.Token,
+            ExpiresIn = expiresIn
+        };
+    }
+
+    public async Task RevokeRefreshTokenAsync(long userId, string refreshToken)
+    {
+        var storedToken = await _db.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId);
+
+        if (storedToken == null)
+            throw new BusinessException("INVALID_REFRESH_TOKEN", "Geçersiz refresh token.", 400);
+
+        if (!storedToken.IsRevoked)
+        {
+            storedToken.RevokedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    private async Task<RefreshToken> CreateRefreshTokenAsync(long userId)
+    {
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
+        var refreshToken = new RefreshToken
+        {
+            UserId = userId,
+            Token = token,
+            ExpiresAt = DateTime.UtcNow.AddDays(7), // 7 gün
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.RefreshTokens.Add(refreshToken);
+        await _db.SaveChangesAsync();
+
+        return refreshToken;
     }
 }

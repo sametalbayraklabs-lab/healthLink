@@ -154,7 +154,7 @@ public class ExpertsController : ControllerBase
     }
 
     [HttpPut("{id}/approve")]
-    // // [Authorize(Roles = "...")] // Temporarily disabled // Temporarily removed
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ExpertProfileDto>> Approve(long id, ApproveExpertRequestDto request)
     {
         var result = await _expertService.ApproveExpertAsync(id, request.AdminNote);
@@ -162,7 +162,7 @@ public class ExpertsController : ControllerBase
     }
 
     [HttpPut("{id}/reject")]
-    // // [Authorize(Roles = "...")] // Temporarily disabled // Temporarily removed
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ExpertProfileDto>> Reject(long id, RejectExpertRequestDto request)
     {
         var result = await _expertService.RejectExpertAsync(id, request.AdminNote);

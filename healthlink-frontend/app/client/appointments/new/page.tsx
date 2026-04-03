@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import {
     Box,
     Container,
@@ -27,6 +27,7 @@ import {
     Tooltip,
     Snackbar,
     Alert,
+    CircularProgress,
 } from '@mui/material';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -105,6 +106,14 @@ interface SpecializationItem {
 }
 
 export default function NewAppointmentPage() {
+    return (
+        <Suspense fallback={<Box display="flex" justifyContent="center" alignItems="center" minHeight="400px"><CircularProgress /></Box>}>
+            <NewAppointmentContent />
+        </Suspense>
+    );
+}
+
+function NewAppointmentContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const expertIdParam = searchParams.get('expertId');

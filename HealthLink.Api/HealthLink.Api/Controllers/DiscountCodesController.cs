@@ -30,7 +30,7 @@ public class DiscountCodesController : ControllerBase
     /// Create discount code (Admin only)
     /// </summary>
     [HttpPost]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<DiscountCodeDto>> Create([FromBody] CreateDiscountCodeRequest request)
     {
         var discount = await _discountService.CreateDiscountCodeAsync(request);
@@ -41,7 +41,7 @@ public class DiscountCodesController : ControllerBase
     /// Get all discount codes (Admin only)
     /// </summary>
     [HttpGet]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<List<DiscountCodeDto>>> GetAll()
     {
         var discounts = await _discountService.GetAllDiscountCodesAsync();
@@ -52,7 +52,7 @@ public class DiscountCodesController : ControllerBase
     /// Update discount code (Admin only)
     /// </summary>
     [HttpPut("{id}")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<DiscountCodeDto>> Update(long id, [FromBody] CreateDiscountCodeRequest request)
     {
         var discount = await _discountService.UpdateDiscountCodeAsync(id, request);

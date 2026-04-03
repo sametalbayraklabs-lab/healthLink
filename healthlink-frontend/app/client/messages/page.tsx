@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
     Container,
@@ -44,6 +44,14 @@ interface Message {
 }
 
 export default function ClientMessagesPage() {
+    return (
+        <Suspense fallback={<Box display="flex" justifyContent="center" alignItems="center" minHeight="400px"><CircularProgress /></Box>}>
+            <ClientMessagesContent />
+        </Suspense>
+    );
+}
+
+function ClientMessagesContent() {
     const searchParams = useSearchParams();
     const expertIdParam = searchParams.get('expertId');
     const { openChatWithExpert } = useChat();

@@ -8,7 +8,7 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/users")]
-// [Authorize] // Temporarily disabled
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;

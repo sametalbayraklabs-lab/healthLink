@@ -1,28 +1,17 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-
 namespace HealthLink.Api.Security;
 
 public static class PasswordHasher
 {
+    private const int WorkFactor = 12;
+
     public static (string hash, string salt) HashPassword(string password)
     {
-        using var hmac = new HMACSHA256();
-        var saltBytes = hmac.Key;
-        var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-
-        return (
-            Convert.ToBase64String(hashBytes),
-            Convert.ToBase64String(saltBytes)
-        );
+        var hash = BCrypt.Net.BCrypt.HashPassword(password, WorkFactor);
+        return (hash, string.Empty);
     }
 
     public static bool VerifyPassword(string password, string storedHash, string storedSalt)
     {
-        var saltBytes = Convert.FromBase64String(storedSalt);
-        using var hmac = new HMACSHA256(saltBytes);
-        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-
-        return Convert.ToBase64String(computedHash) == storedHash;
+        return BCrypt.Net.BCrypt.Verify(password, storedHash);
     }
 }

@@ -9,11 +9,13 @@ public class GlobalExceptionHandlerMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
+    private readonly IHostEnvironment _env;
 
-    public GlobalExceptionHandlerMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlerMiddleware> logger)
+    public GlobalExceptionHandlerMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlerMiddleware> logger, IHostEnvironment env)
     {
         _next = next;
         _logger = logger;
+        _env = env;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -89,20 +91,35 @@ public class GlobalExceptionHandlerMiddleware
         return context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }
 
-    private static Task HandleUnhandledExceptionAsync(HttpContext context, Exception exception)
+    private Task HandleUnhandledExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        var response = new
+        object response;
+
+        if (_env.IsDevelopment())
         {
-            errorCode = "INTERNAL_SERVER_ERROR",
-            fallbackMessage = "An unexpected error occurred. Please try again later.",
-            // Include details in development for debugging
-            detail = exception.Message,
-            innerDetail = exception.InnerException?.Message,
-            timestamp = DateTime.UtcNow
-        };
+            // Development: show details for debugging
+            response = new
+            {
+                errorCode = "INTERNAL_SERVER_ERROR",
+                fallbackMessage = "An unexpected error occurred.",
+                detail = exception.Message,
+                innerDetail = exception.InnerException?.Message,
+                timestamp = DateTime.UtcNow
+            };
+        }
+        else
+        {
+            // Production/Test: generic message only
+            response = new
+            {
+                errorCode = "INTERNAL_SERVER_ERROR",
+                fallbackMessage = "An unexpected error occurred. Please try again later.",
+                timestamp = DateTime.UtcNow
+            };
+        }
 
         return context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }

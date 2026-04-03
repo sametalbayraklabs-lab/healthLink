@@ -1,0 +1,75 @@
+name: Deploy to Production Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Backend .NET Build & Test
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies (Backend)
+      run: dotnet restore HealthLink.Api/HealthLink.Api/HealthLink.Api.csproj
+
+    - name: Build (Backend)
+      run: dotnet build HealthLink.Api/HealthLink.Api/HealthLink.Api.csproj --configuration Release --no-restore
+
+    # Frontend Node.js Build
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies (Frontend)
+      working-directory: ./healthlink-frontend
+      run: npm ci
+
+    - name: Build (Frontend)
+      working-directory: ./healthlink-frontend
+      run: npm run build
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    # Burası yalnızca testler geçerse çalışır
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy via SSH
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: 22
+        source: "."
+        target: "/opt/healthlink"
+
+    - name: Docker Compose Up on VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: 22
+        script: |
+          cd /opt/healthlink
+          # Mevcut sunucu ortam değişkenlerini ayarla
+          docker-compose down
+          docker-compose build
+          docker-compose up -d
+          # Eski, kullanılmayan imajları temizle
+          docker image prune -f

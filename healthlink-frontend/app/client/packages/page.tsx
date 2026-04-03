@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import {
     Container,
     Typography,
@@ -40,6 +40,14 @@ const getExpertTypeLabel = (type: string) => {
 };
 
 export default function PackagesPage() {
+    return (
+        <Suspense fallback={<Box display="flex" justifyContent="center" alignItems="center" minHeight="400px"><CircularProgress /></Box>}>
+            <PackagesContent />
+        </Suspense>
+    );
+}
+
+function PackagesContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const returnTo = searchParams.get('returnTo');

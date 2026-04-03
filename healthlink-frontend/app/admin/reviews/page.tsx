@@ -368,7 +368,7 @@ export default function AdminReviewsPage() {
                     ) : selectedReview && (
                         <Box mt={2}>
                             <Grid container spacing={3}>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Danışan</Typography>
                                     <Typography variant="body1" fontWeight="medium">
                                         {selectedReview.clientName}
@@ -377,7 +377,7 @@ export default function AdminReviewsPage() {
                                         {selectedReview.clientEmail}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Uzman</Typography>
                                     <Typography variant="body1" fontWeight="medium">
                                         {selectedReview.expertName}
@@ -386,24 +386,24 @@ export default function AdminReviewsPage() {
                                         {selectedReview.expertEmail}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Uzman Tipi</Typography>
                                     <Typography variant="body1">{getExpertTypeLabel(selectedReview.expertType)}</Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Randevu Tarihi</Typography>
                                     <Typography variant="body1">
                                         {new Date(selectedReview.appointmentDate).toLocaleDateString('tr-TR')}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Puan</Typography>
                                     <Box display="flex" alignItems="center" gap={1}>
                                         <Rating value={selectedReview.rating} readOnly />
                                         <Typography>({selectedReview.rating}/5)</Typography>
                                     </Box>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="subtitle2" color="text.secondary">Durum</Typography>
                                     <Chip
                                         label={getStatusLabel(selectedReview.status)}
@@ -411,7 +411,7 @@ export default function AdminReviewsPage() {
                                         size="small"
                                     />
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={12}>
                                     <Typography variant="subtitle2" color="text.secondary">Yorum</Typography>
                                     <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                                         <Typography variant="body1">
@@ -421,7 +421,7 @@ export default function AdminReviewsPage() {
                                 </Grid>
 
                                 {selectedReview.status === 'PendingApproval' && (
-                                    <Grid item xs={12}>
+                                    <Grid size={12}>
                                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                             Admin Notu (Opsiyonel)
                                         </Typography>
@@ -437,7 +437,7 @@ export default function AdminReviewsPage() {
                                 )}
 
                                 {selectedReview.adminNote && selectedReview.status !== 'PendingApproval' && (
-                                    <Grid item xs={12}>
+                                    <Grid size={12}>
                                         <Typography variant="subtitle2" color="text.secondary">Admin Notu</Typography>
                                         <Typography variant="body2">{selectedReview.adminNote}</Typography>
                                     </Grid>

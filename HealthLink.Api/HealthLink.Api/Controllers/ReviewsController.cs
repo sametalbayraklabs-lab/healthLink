@@ -21,7 +21,7 @@ public class ReviewsController : ControllerBase
     /// Create a review for a completed appointment
     /// </summary>
     [HttpPost]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Client")]
     public async Task<ActionResult<ReviewDto>> Create([FromBody] CreateReviewRequest request)
     {
         var userId = User.GetUserId();
@@ -55,7 +55,7 @@ public class ReviewsController : ControllerBase
     /// Get my reviews (as client)
     /// </summary>
     [HttpGet("me")]
-    // [Authorize(Roles = "...")]  // Temporarily disabled
+    [Authorize(Roles = "Client")]
     public async Task<ActionResult<List<ReviewDto>>> GetMyReviews()
     {
         var userId = User.GetUserId();
@@ -67,7 +67,7 @@ public class ReviewsController : ControllerBase
     /// Approve a review (Admin only)
     /// </summary>
     [HttpPost("{id}/approve")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ReviewDto>> Approve(long id, [FromBody] string? adminNote = null)
     {
         var review = await _reviewService.ApproveReviewAsync(id, adminNote);
@@ -78,7 +78,7 @@ public class ReviewsController : ControllerBase
     /// Reject a review (Admin only)
     /// </summary>
     [HttpPost("{id}/reject")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ReviewDto>> Reject(long id, [FromBody] string? adminNote = null)
     {
         var review = await _reviewService.RejectReviewAsync(id, adminNote);

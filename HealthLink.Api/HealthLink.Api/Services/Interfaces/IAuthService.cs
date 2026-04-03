@@ -8,6 +8,8 @@ public interface IAuthService
     Task<RegisterExpertResponseDto> RegisterExpertAsync(RegisterExpertRequestDto request);
     Task<RegisterAdminResponseDto> RegisterAdminAsync(RegisterAdminRequestDto request);
     Task<LoginResponseDto> LoginAsync(LoginRequestDto request);
+    Task<RefreshTokenResponseDto> RefreshTokenAsync(string refreshToken);
+    Task RevokeRefreshTokenAsync(long userId, string refreshToken);
     Task ChangePasswordAsync(long userId, ChangePasswordRequestDto request);
     Task VerifyEmailAsync(VerifyEmailRequestDto request);
     Task ResendVerificationCodeAsync(ResendVerificationRequestDto request);

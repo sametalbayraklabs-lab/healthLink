@@ -4,6 +4,7 @@ using HealthLink.Api.Dtos.Auth;
 using HealthLink.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthLink.Api.Controllers;
@@ -22,6 +23,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register-client")]
+    [EnableRateLimiting("register")]
     public async Task<ActionResult<RegisterClientResponseDto>> RegisterClient(RegisterClientRequestDto request)
     {
         var result = await _auth.RegisterClientAsync(request);
@@ -29,6 +31,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register-expert")]
+    [EnableRateLimiting("register")]
     public async Task<ActionResult<RegisterExpertResponseDto>> RegisterExpert(RegisterExpertRequestDto request)
     {
         var result = await _auth.RegisterExpertAsync(request);
@@ -36,6 +39,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register-admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> RegisterAdmin(RegisterAdminRequestDto request)
     {
         var result = await _auth.RegisterAdminAsync(request);
@@ -43,6 +47,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public async Task<ActionResult<LoginResponseDto>> Login(LoginRequestDto request)
     {
         var result = await _auth.LoginAsync(request);
@@ -80,6 +85,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("resend-verification")]
+    [EnableRateLimiting("email")]
     public async Task<ActionResult> ResendVerification(ResendVerificationRequestDto request)
     {
         await _auth.ResendVerificationCodeAsync(request);
@@ -87,6 +93,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("email")]
     public async Task<ActionResult> ForgotPassword(ForgotPasswordRequestDto request)
     {
         await _auth.ForgotPasswordAsync(request);
@@ -99,5 +106,21 @@ public class AuthController : ControllerBase
         await _auth.ResetPasswordAsync(request);
         return Ok(new { success = true, message = "Parolanız başarıyla değiştirildi." });
     }
-}
 
+    [HttpPost("refresh-token")]
+    [EnableRateLimiting("login")]
+    public async Task<ActionResult<RefreshTokenResponseDto>> RefreshToken(RefreshTokenRequestDto request)
+    {
+        var result = await _auth.RefreshTokenAsync(request.RefreshToken);
+        return Ok(result);
+    }
+
+    [HttpPost("revoke-token")]
+    [Authorize]
+    public async Task<ActionResult> RevokeToken(RefreshTokenRequestDto request)
+    {
+        var userId = UserHelper.GetUserId(User);
+        await _auth.RevokeRefreshTokenAsync(userId, request.RefreshToken);
+        return Ok(new { success = true, message = "Token başarıyla iptal edildi." });
+    }
+}

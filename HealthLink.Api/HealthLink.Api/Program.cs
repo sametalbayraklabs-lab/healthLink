@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Threading.RateLimiting;
 
 using HealthLink.Api.Data;
 using HealthLink.Api.Hubs;
@@ -8,6 +9,7 @@ using HealthLink.Api.Services;
 using HealthLink.Api.Services.Interfaces;
 
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.RateLimiting;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -75,7 +77,8 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://healthlink.com.tr")
+        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -173,6 +176,63 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Login: IP başına son 1 dakikada 5 istek (Sliding Window — brute-force koruması)
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                SegmentsPerWindow = 6, // 10 saniyelik dilimler
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Register: IP başına 1 dakikada 3 istek (Fixed Window — email verification zaten var)
+    options.AddPolicy("register", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Email işlemleri: IP başına son 5 dakikada 3 istek (Sliding Window — email spam koruması)
+    options.AddPolicy("email", httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                Window = TimeSpan.FromMinutes(5),
+                SegmentsPerWindow = 5, // 1 dakikalık dilimler
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Global: IP başına son 1 dakikada 100 istek (Sliding Window)
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                SegmentsPerWindow = 6,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+});
+
 var app = builder.Build();
 
 // Global exception handler
@@ -193,6 +253,9 @@ app.UseStaticFiles();
 // CORS
 app.UseCors();
 
+// Rate Limiting
+app.UseRateLimiter();
+
 // JWT Middleware removed - using built-in ASP.NET Core authentication
 
 // Authentication & Authorization
@@ -203,18 +266,21 @@ app.MapControllers();
 app.MapHub<ChatHub>("/chathub");
 
 // Seed database with test data
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
-    var services = scope.ServiceProvider;
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        await SeedData.Initialize(services);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Error seeding database: {ex.Message}");
-        Console.WriteLine($"❌ Inner Exception: {ex.InnerException?.Message}");
-        Console.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
+        var services = scope.ServiceProvider;
+        try
+        {
+            await SeedData.Initialize(services);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error seeding database: {ex.Message}");
+            Console.WriteLine($"❌ Inner Exception: {ex.InnerException?.Message}");
+            Console.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
+        }
     }
 }
 

@@ -92,7 +92,7 @@ export default function ExpertDashboard() {
             ) : (
                 <Grid container spacing={3} sx={{ mt: 2 }}>
                     {stats.map((stat, index) => (
-                        <Grid key={index} xs={12} sm={6} md={3}>
+                        <Grid key={index} size={{ xs: 12, sm: 6, md: 3 }}>
                             <Card
                                 sx={{
                                     cursor: stat.href ? 'pointer' : 'default',

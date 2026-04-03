@@ -294,7 +294,7 @@ export default function RecurringScheduleSettings({ onError, onSuccess }: Props)
                                     <Stack spacing={1.5}>
                                         {template.timeSlots.map((slot, index) => (
                                             <Grid container spacing={2} alignItems="center" key={index}>
-                                                <Grid item xs={12} sm={5}>
+                                                <Grid size={{ xs: 12, sm: 5 }}>
                                                     <TextField
                                                         fullWidth
                                                         type="time"
@@ -305,7 +305,7 @@ export default function RecurringScheduleSettings({ onError, onSuccess }: Props)
                                                         size="small"
                                                     />
                                                 </Grid>
-                                                <Grid item xs={12} sm={5}>
+                                                <Grid size={{ xs: 12, sm: 5 }}>
                                                     <TextField
                                                         fullWidth
                                                         type="time"
@@ -316,7 +316,7 @@ export default function RecurringScheduleSettings({ onError, onSuccess }: Props)
                                                         size="small"
                                                     />
                                                 </Grid>
-                                                <Grid item xs={12} sm={2}>
+                                                <Grid size={{ xs: 12, sm: 2 }}>
                                                     <IconButton
                                                         size="small"
                                                         color="error"

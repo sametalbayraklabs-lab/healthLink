@@ -8,7 +8,7 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/clients")]
-// [Authorize] // Temporarily disabled
+[Authorize]
 public class ClientsController : ControllerBase
 {
     private readonly IClientService _clientService;
@@ -19,7 +19,7 @@ public class ClientsController : ControllerBase
     }
 
     [HttpGet("me")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Client")]
     public async Task<ActionResult<ClientProfileDto>> GetMe()
     {
         var userId = User.GetUserId();
@@ -28,7 +28,7 @@ public class ClientsController : ControllerBase
     }
 
     [HttpPut("me")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Client")]
     public async Task<ActionResult<ClientProfileDto>> UpdateMe(UpdateClientRequestDto request)
     {
         var userId = User.GetUserId();
@@ -37,7 +37,7 @@ public class ClientsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    // [Authorize(Roles = "...")] // Temporarily disabled
+    [Authorize(Roles = "Admin,Expert")]
     public async Task<ActionResult<ClientProfileDto>> GetById(long id)
     {
         var result = await _clientService.GetClientByIdAsync(id);

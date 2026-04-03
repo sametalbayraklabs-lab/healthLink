@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState, Suspense } from 'react';
 import {
     Container,
     Typography,
@@ -42,6 +42,14 @@ interface PackageDetails {
 }
 
 export default function PackageDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    return (
+        <Suspense fallback={<Box display="flex" justifyContent="center" alignItems="center" minHeight="400px"><CircularProgress /></Box>}>
+            <PackageDetailContent params={params} />
+        </Suspense>
+    );
+}
+
+function PackageDetailContent({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -166,7 +174,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Grid container spacing={4}>
                     {/* Left Column - Package Details */}
-                    <Grid item xs={12} md={8}>
+                    <Grid size={{ xs: 12, md: 8 }}>
                         <Paper elevation={2} sx={{ p: 4, mb: 3 }}>
                             <Box display="flex" alignItems="center" gap={2} mb={2}>
                                 <LocalHospitalIcon color="primary" sx={{ fontSize: 40 }} />
@@ -230,7 +238,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
                     </Grid>
 
                     {/* Right Column - Purchase Card */}
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <Card sx={{ position: 'sticky', top: 20 }}>
                             <CardContent>
                                 <Box textAlign="center" mb={3}>

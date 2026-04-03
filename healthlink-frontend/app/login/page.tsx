@@ -57,7 +57,7 @@ function LoginForm() {
             <Container maxWidth="sm">
                 <Paper elevation={3} sx={{ p: 4 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
-                        <BrandLogo size="lg" noLink showIcon />
+                        <BrandLogo size="lg" noLink />
                     </Box>
                     <Typography variant="body1" color="text.secondary" align="center" mb={4}>
                         Sağlıklı yaşamın dijital platformuna giriş yapın

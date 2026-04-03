@@ -1,6 +1,7 @@
 using HealthLink.Api.Common;
 using HealthLink.Api.Data;
 using HealthLink.Api.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace HealthLink.Api.Controllers;
 
 [ApiController]
 [Route("api/favorites")]
+[Authorize]
 public class FavoritesController : ControllerBase
 {
     private readonly AppDbContext _db;

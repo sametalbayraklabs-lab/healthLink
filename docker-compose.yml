@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Veritabanı Servisi (PostgreSQL)
+  db:
+    image: postgres:18-alpine
+    container_name: healthlink_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mypassword}
+      POSTGRES_DB: ${DB_NAME:-healthlink}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Optional: Dışarıdan doğrudan DB'ye erişmek için
+
+  # Backend Servisi (.NET 8)
+  api:
+    build:
+      context: ./HealthLink.Api
+      dockerfile: Dockerfile
+    container_name: healthlink_api
+    restart: always
+    depends_on:
+      - db
+    environment:
+      # Veritabanı bağlantısı (Docker DNS'ine bağlanır: 'db' container ismi)
+      - ConnectionStrings__Default=Host=db;Database=${DB_NAME:-healthlink};Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-mypassword}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - AllowedOrigins__0=http://localhost:3000
+      - AllowedOrigins__1=https://healthlink.com.tr
+      # Production anahtarlarını .env dosyasından okuyacağız!
+      - Jwt__Key=${JWT_SECRET}
+    ports:
+      - "5107:8080" # ASP.NET Core 8 container'lar standart olarak 8080'den dinler
+
+  # Frontend Servisi (Next.js)
+  frontend:
+    build:
+      context: ./healthlink-frontend
+      dockerfile: Dockerfile
+    container_name: healthlink_frontend
+    restart: always
+    depends_on:
+      - api
+    environment:
+      - NODE_ENV=production
+      # NEXT_PUBLIC prefix'li verileri .env'den beslemeliyiz
+      - NEXT_PUBLIC_API_URL=http://api:8080 # Container içi Next SSR çağrıları için (Client'ta browser'dan tetikleniyorsa domain adı girilir)
+    ports:
+      - "3000:3000"
+
+volumes:
+  # Kalıcı veritabanı alanı
+  postgres_data:
